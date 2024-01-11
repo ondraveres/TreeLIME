@@ -21,6 +21,9 @@ include("common.jl")
 include("loader.jl")
 include("stats.jl")
 using PrintTypesTersely
+function StatsBase.predict(model::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
+    o = mapslices(x -> ikeyvalmap[argmax(x)], model(ds), dims=1)
+end
 PrintTypesTersely.off()
 _s = ArgParseSettings()
 @add_arg_table! _s begin
@@ -36,18 +39,12 @@ settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 # start by loading all samples
 ###############################################################
 samples, labels, concepts = loaddata(settings);
-concepts
+
 resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...)
-extractor(concepts[1], store_input=true)
-vcat(samples, concepts)
+
 ###############################################################
 # create schema of the JSON
 ###############################################################
-Flux.onehotbatch(labels, 1:2)
-trndata
-resultsdir()
-ExplainMill.confidencegap(soft_model, extractor(concepts[1]), 2)[1, 1]
-ExplainMill.confidencegap(soft_model, extractor(JSON.parse("{}")), 1)
 if !isfile(resultsdir("model.bson"))
     !isdir(resultsdir()) && mkpath(resultsdir())
     sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
@@ -98,7 +95,6 @@ if !isfile(resultsdir("model.bson"))
     if concept_gap < 0
         error("Failed to train a model")
     end
-    good_model = model
     model = good_model
     BSON.@save resultsdir("model.bson") model extractor schema
 end
@@ -138,7 +134,6 @@ function onlycorrect(dss, i, min_confidence=0)
     dss[correct[:]]
 end
 
-ExplainMill.confidencegap()
 strain = 2
 Random.seed!(settings.incarnation)
 ds = loadclass(strain, 1000)
@@ -156,8 +151,6 @@ variants = vcat(
     collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:],
     collect(Iterators.product(["grad", "gnn", "gnn2", "banz"], vcat(heuristic)))[:],
 )
-ds
-using Mill: nobs
 ds = ds[1:min(numobs(ds), 100)]
 function getexplainer(name)
     if name == "stochastic"
@@ -176,30 +169,15 @@ function getexplainer(name)
 end
 
 exdf = DataFrame()
-for (name, pruning_method) in variants
+for (name, pruning_method) in variants[1:3]
     e, n = getexplainer(name)
     addexperiment(DataFrame(), e, ds[1], logsoft_model, i, n, threshold_gap, name, pruning_method, 1, settings, statlayer)
-    for j in 1:nobs(ds)
+    for j in 1:numobs(ds)
         global exdf
         exdf = addexperiment(exdf, e, ds[j], logsoft_model, i, n, threshold_gap, name, pruning_method, j, settings, statlayer)
     end
     BSON.@save resultsdir("stats.bson") exdf
 end
-using Mill
-Mill.AbstractMillNode
-function predict(model::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
-    o = mapslices(x -> ikeyvalmap[argmax(x)], model(ds), dims=1)
-end
 
-nobs()
-soft_model
-ds
-[1, 2]
 
-predict(soft_model, ds, [1, 2])
 
-o = mapslices(x -> [1, 2][argmax(x)], soft_model(ds), dims=1)
-PrintTypesTersely.on()
-typeof(o)
-soft_model(ds)[1,]
-mean(o)
