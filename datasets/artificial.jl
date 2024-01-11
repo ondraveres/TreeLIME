@@ -1,6 +1,6 @@
 # for ((i=1;i<=20;i+=1)); do  for d in  one_of_1_2trees  one_of_1_5trees  one_of_1_paths  one_of_2_5trees  one_of_2_paths  one_of_5_paths ; do  julia -p 24 artificial.jl --dataset $d --incarnation $i ; done ; done
 using Pkg
-Pkg.activate("..")
+cd("/home/veresond/ExplainMill.jl/myscripts/datasets")
 
 using ArgParse
 using Flux
@@ -41,7 +41,8 @@ settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 samples, labels, concepts = loaddata(settings);
 
 resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...)
-
+println("start")
+println("resultsdir() = ", resultsdir())
 ###############################################################
 # create schema of the JSON
 ###############################################################
@@ -59,14 +60,14 @@ if !isfile(resultsdir("newmodel.bson"))
     good_model, concept_gap = nothing, 0
     for i in 1:10
         global good_model, concept_gap
-        model = reflectinmodel(
+        local model = reflectinmodel(
             sch,
             extractor,
             d -> Dense(d, settings.k, relu),
             all_imputing=true,
             # b = Dict("" => d -> Chain(Dense(d, settings.k, relu), Dense(settings.k, 2)))
         )
-        model = @set model.m = Chain(model.m, Dense(settings.k, 2))
+        local model = @set model.m = Chain(model.m, Dense(settings.k, 2))
 
         ###############################################################
         #  train
@@ -84,7 +85,7 @@ if !isfile(resultsdir("newmodel.bson"))
         soft_model = @set model.m = Chain(model.m, softmax)
         cg = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), 2)[1, 1], concepts))
         eg = ExplainMill.confidencegap(soft_model, extractor(JSON.parse("{}")), 1)[1, 1]
-        @info "minimum gap on concepts = $(cg) on empty sample = $(eg)"
+        println("minimum gap on concepts = $(cg) on empty sample = $(eg)")
         if cg > 0 && eg > 0
             if cg > concept_gap
                 good_model, concept_gap = model, cg
@@ -178,6 +179,9 @@ for (name, pruning_method) in variants[1:3]
     end
     BSON.@save resultsdir("stats.bson") exdf
 end
+
+println("done")
+println("resultsdir() = ", resultsdir())
 
 
 

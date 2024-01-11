@@ -113,7 +113,7 @@ function addexperiment(exdf, e, dd, logsoft_model, i, n, threshold_gap, name, pr
     isdone(exdf, name, pruning_method, sampleno, n) && return (exdf)
     reset!(statlayer)
     t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model,# i, n,
-        pruning_method=pruning_method) #threshold = threshold_gap)
+        pruning_method=pruning_method, abs_tol=threshold_gap) #threshold = threshold_gap)
     s = merge((
             name=name,
             pruning_method=pruning_method,
