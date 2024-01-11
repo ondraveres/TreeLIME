@@ -1,6 +1,6 @@
 # for ((i=1;i<=20;i+=1)); do  for d in  one_of_1_2trees  one_of_1_5trees  one_of_1_paths  one_of_2_5trees  one_of_2_paths  one_of_5_paths ; do  julia -p 24 artificial.jl --dataset $d --incarnation $i ; done ; done
 using Pkg
-#Pkg.activate("..")
+Pkg.activate("..")
 
 using ArgParse
 using Flux
@@ -21,8 +21,8 @@ include("common.jl")
 include("loader.jl")
 include("stats.jl")
 using PrintTypesTersely
-function StatsBase.predict(model::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
-    o = mapslices(x -> ikeyvalmap[argmax(x)], model(ds), dims=1)
+function StatsBase.predict(mymodel::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
+    o = mapslices(x -> ikeyvalmap[argmax(x)], mymodel(ds), dims=1)
 end
 PrintTypesTersely.off()
 _s = ArgParseSettings()
@@ -45,7 +45,7 @@ resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settin
 ###############################################################
 # create schema of the JSON
 ###############################################################
-if !isfile(resultsdir("model.bson"))
+if !isfile(resultsdir("newmodel.bson"))
     !isdir(resultsdir()) && mkpath(resultsdir())
     sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
     extractor = suggestextractor(sch)
@@ -96,12 +96,12 @@ if !isfile(resultsdir("model.bson"))
         error("Failed to train a model")
     end
     model = good_model
-    BSON.@save resultsdir("model.bson") model extractor schema
+    BSON.@save resultsdir("newmodel.bson") model extractor schema
 end
 resultsdir()
 using Flux
 
-d = BSON.load(resultsdir("model.bson"))
+d = BSON.load(resultsdir("newmodel.bson"))
 
 
 
