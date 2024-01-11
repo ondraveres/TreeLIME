@@ -35,6 +35,8 @@ end
 settings = parse_args(ARGS, _s; as_symbols=true)
 settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
+model_name = "bestmodel.bson"
+
 ###############################################################
 # start by loading all samples
 ###############################################################
@@ -46,7 +48,7 @@ println("resultsdir() = ", resultsdir())
 ###############################################################
 # create schema of the JSON
 ###############################################################
-if !isfile(resultsdir("newmodel.bson"))
+if !isfile(resultsdir(model_name))
     !isdir(resultsdir()) && mkpath(resultsdir())
     sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
     extractor = suggestextractor(sch)
@@ -97,12 +99,12 @@ if !isfile(resultsdir("newmodel.bson"))
         error("Failed to train a model")
     end
     model = good_model
-    BSON.@save resultsdir("newmodel.bson") model extractor schema
+    BSON.@save resultsdir(model_name) model extractor schema
 end
 resultsdir()
 using Flux
 
-d = BSON.load(resultsdir("newmodel.bson"))
+d = BSON.load(resultsdir(model_name))
 
 
 
@@ -170,7 +172,7 @@ function getexplainer(name)
 end
 
 exdf = DataFrame()
-for (name, pruning_method) in variants[1:3]
+for (name, pruning_method) in variants
     e, n = getexplainer(name)
     addexperiment(DataFrame(), e, ds[1], logsoft_model, i, n, threshold_gap, name, pruning_method, 1, settings, statlayer)
     for j in 1:numobs(ds)
