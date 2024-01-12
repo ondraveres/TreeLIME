@@ -4,4 +4,4 @@
 #SBATCH --nodes=1 --ntasks-per-node=1 --cpus-per-task=1
 #SBATCH --mem=20G
 
-julia  --color=no -O3 artificial.jl --dataset $1 --task $2 --incarnation $3 #-i $SLURM_ARRAY_TASK_ID
+stdbuf -o0 -e0 julia  --color=no -O3 artificial.jl --dataset $1 --task $2 --incarnation $3 #-i $SLURM_ARRAY_TASK_ID

@@ -1,0 +1,218 @@
+  Activating project at `~/ExplainMill.jl/myscripts`
+[ Info: accuracy on concepts = 0.0 on samples = 0.67395
+[ Info: accuracy on concepts = 1.0 on samples = 0.9359
+[ Info: accuracy on concepts = 1.0 on samples = 0.6601
+[ Info: accuracy on concepts = 0.0 on samples = 0.9602
+[ Info: accuracy on concepts = 1.0 on samples = 0.7246
+[ Info: accuracy on concepts = 1.0 on samples = 0.8923
+[ Info: accuracy on concepts = 1.0 on samples = 0.84325
+[ Info: accuracy on concepts = 0.0 on samples = 0.5777
+[ Info: accuracy on concepts = 1.0 on samples = 1.0
+[ Info: accuracy on concepts = 1.0 on samples = 0.65405
+[ Info: accuracy on concepts = 1.0 on samples = 0.9469
+[ Info: accuracy on concepts = 1.0 on samples = 1.0
+[ Info: accuracy on concepts = 0.0 on samples = 0.92365
+[ Info: accuracy on concepts = 0.0 on samples = 0.4989
+[ Info: accuracy on concepts = 0.0 on samples = 1.0
+[ Info: accuracy on concepts = 1.0 on samples = 0.6517
+[ Info: accuracy on concepts = 1.0 on samples = 0.55645
+[ Info: accuracy on concepts = 1.0 on samples = 0.68265
+[ Info: accuracy on concepts = 1.0 on samples = 0.55515
+[ Info: accuracy on concepts = 1.0 on samples = 0.9322
+[ Info: accuracy on concepts = 1.0 on samples = 0.87555
+[ Info: accuracy on concepts = 0.0 on samples = 0.5273
+[ Info: accuracy on concepts = 1.0 on samples = 0.71325
+[ Info: accuracy on concepts = 1.0 on samples = 0.9759
+[ Info: accuracy on concepts = 1.0 on samples = 0.99975
+[ Info: accuracy on concepts = 1.0 on samples = 0.82475
+[ Info: accuracy on concepts = 0.0 on samples = 0.82545
+[ Info: accuracy on concepts = 0.0 on samples = 0.8144
+[ Info: accuracy on concepts = 1.0 on samples = 0.9512
+[ Info: accuracy on concepts = 0.0 on samples = 0.6868
+[ Info: accuracy on concepts = 1.0 on samples = 0.9799
+[ Info: accuracy on concepts = 1.0 on samples = 0.7796
+[ Info: accuracy on concepts = 1.0 on samples = 0.81375
+[ Info: accuracy on concepts = 1.0 on samples = 0.50105
+[ Info: accuracy on concepts = 1.0 on samples = 0.6253
+[ Info: accuracy on concepts = 1.0 on samples = 0.71775
+[ Info: accuracy on concepts = 1.0 on samples = 1.0
+[ Info: accuracy on concepts = 1.0 on samples = 0.9162
+[ Info: accuracy on concepts = 1.0 on samples = 0.99995
+[ Info: accuracy on concepts = 0.0 on samples = 0.96745
+[ Info: accuracy on concepts = 1.0 on samples = 0.5
+[ Info: accuracy on concepts = 1.0 on samples = 0.9923
+[ Info: accuracy on concepts = 1.0 on samples = 0.9961
+[ Info: accuracy on concepts = 0.0 on samples = 0.9219
+[ Info: accuracy on concepts = 1.0 on samples = 0.9198
+[ Info: accuracy on concepts = 1.0 on samples = 0.65765
+[ Info: accuracy on concepts = 0.0 on samples = 0.7497
+[ Info: accuracy on concepts = 1.0 on samples = 0.9693
+[ Info: accuracy on concepts = 1.0 on samples = 0.7414
+[ Info: accuracy on concepts = 0.0 on samples = 0.45275
+[ Info: accuracy on concepts = 1.0 on samples = 1.0
+[ Info: accuracy on concepts = 1.0 on samples = 0.87615
+[ Info: accuracy on concepts = 1.0 on samples = 0.64815
+[ Info: accuracy on concepts = 1.0 on samples = 0.55175
+[ Info: accuracy on concepts = 1.0 on samples = 0.59315
+[ Info: accuracy on concepts = 1.0 on samples = 0.6177
+[ Info: accuracy on concepts = 0.0 on samples = 0.993
+[ Info: accuracy on concepts = 1.0 on samples = 1.0
+[ Info: accuracy on concepts = 0.0 on samples = 0.4576
+[ Info: accuracy on concepts = 1.0 on samples = 0.999
+[ Info: accuracy on concepts = 1.0 on samples = 0.88105
+[ Info: accuracy on concepts = 1.0 on samples = 0.5
+[ Info: accuracy on concepts = 1.0 on samples = 1.0
+[ Info: accuracy on concepts = 1.0 on samples = 0.6449
+[ Info: accuracy on concepts = 1.0 on samples = 0.9889
+[ Info: accuracy on concepts = 0.0 on samples = 0.9911
+[ Info: accuracy on concepts = 0.0 on samples = 0.6065
+[ Info: accuracy on concepts = 1.0 on samples = 0.82845
+[ Info: accuracy on concepts = 1.0 on samples = 1.0
+[ Info: accuracy on concepts = 1.0 on samples = 0.62655
+[ Info: accuracy on concepts = 0.0 on samples = 0.76485
+[ Info: accuracy on concepts = 1.0 on samples = 0.9754
+[ Info: accuracy on concepts = 1.0 on samples = 0.99475
+[ Info: accuracy on concepts = 1.0 on samples = 0.7222
+[ Info: accuracy on concepts = 1.0 on samples = 0.9576
+[ Info: accuracy on concepts = 0.0 on samples = 0.9425
+[ Info: accuracy on concepts = 0.0 on samples = 0.67435
+[ Info: accuracy on concepts = 1.0 on samples = 0.693
+[ Info: accuracy on concepts = 1.0 on samples = 0.7738
+[ Info: accuracy on concepts = 1.0 on samples = 0.63165
+[ Info: accuracy on concepts = 1.0 on samples = 0.86165
+[ Info: accuracy on concepts = 0.0 on samples = 0.72505
+[ Info: accuracy on concepts = 1.0 on samples = 0.97715
+[ Info: accuracy on concepts = 0.0 on samples = 0.7641
+[ Info: accuracy on concepts = 0.0 on samples = 0.51175
+[ Info: accuracy on concepts = 1.0 on samples = 0.49935
+[ Info: accuracy on concepts = 0.0 on samples = 0.96295
+[ Info: accuracy on concepts = 1.0 on samples = 0.60715
+[ Info: accuracy on concepts = 1.0 on samples = 0.89535
+[ Info: accuracy on concepts = 1.0 on samples = 0.9968
+[ Info: accuracy on concepts = 1.0 on samples = 0.8326
+[ Info: accuracy on concepts = 0.0 on samples = 0.61005
+[ Info: accuracy on concepts = 1.0 on samples = 0.8339
+[ Info: accuracy on concepts = 1.0 on samples = 1.0
+[ Info: accuracy on concepts = 1.0 on samples = 0.61145
+[ Info: accuracy on concepts = 1.0 on samples = 0.84155
+[ Info: accuracy on concepts = 0.0 on samples = 1.0
+[ Info: accuracy on concepts = 0.0 on samples = 0.563
+[ Info: accuracy on concepts = 1.0 on samples = 0.94785
+[ Info: accuracy on concepts = 1.0 on samples = 0.7389
+[ Info: minimum gap on concepts = 0.62584746 on samples = 0.48290056
+ERROR: LoadError: MethodError: no method matching typename(GnnExplainer){…}(::typename(Float32){…}, ::typename(Float32){…})
+
+Closest candidates are:
+  typename(GnnExplainer){…}(::typename(Any){…}, ::typename(Any){…}, !Matched::typename(Any){…})
+   @ ExplainMill ~/ExplainMill.jl/src/heuristics/gnn_explainer.jl:2
+  typename(GnnExplainer){…}(!Matched::typename(Int64){…}, ::typename(Float32){…}, !Matched::typename(Float32){…})
+   @ ExplainMill ~/ExplainMill.jl/src/heuristics/gnn_explainer.jl:2
+
+Stacktrace:
+ [1] getexplainer(name::typename(String){…})
+   @ Main ~/ExplainMill.jl/myscripts/datasets/artificial.jl:178
+ [2] top-level scope
+   @ ~/ExplainMill.jl/myscripts/datasets/artificial.jl:188
+in expression starting at /home/veresond/ExplainMill.jl/myscripts/datasets/artificial.jl:187
+start
+resultsdir() = ../../data/sims/mutagenesis/one_of_1_1trees/14
+trained: minimum gap on concepts = -0.03215003 on empty sample = -0.006701559
+trained: minimum gap on concepts = 0.070682555 on empty sample = -0.044611484
+trained: minimum gap on concepts = 0.022151232 on empty sample = 0.028256
+trained: minimum gap on concepts = -0.08148572 on empty sample = 0.13047966
+trained: minimum gap on concepts = 0.037592053 on empty sample = -0.023752928
+trained: minimum gap on concepts = 0.09620568 on empty sample = -0.0320307
+trained: minimum gap on concepts = 0.058078647 on empty sample = -0.008117795
+trained: minimum gap on concepts = -0.0077689886 on empty sample = 0.010799259
+trained: minimum gap on concepts = 0.20146644 on empty sample = 0.05554521
+trained: minimum gap on concepts = 0.10961741 on empty sample = 0.04688105
+trained: minimum gap on concepts = 0.087201804 on empty sample = -0.0066654384
+trained: minimum gap on concepts = 0.072879314 on empty sample = 0.045904517
+trained: minimum gap on concepts = -0.095707566 on empty sample = 0.15409142
+trained: minimum gap on concepts = -0.26722378 on empty sample = -0.052609116
+trained: minimum gap on concepts = -0.046641678 on empty sample = 0.05541435
+trained: minimum gap on concepts = 0.08679867 on empty sample = 0.031534433
+trained: minimum gap on concepts = 0.0067370236 on empty sample = -0.04142964
+trained: minimum gap on concepts = 0.09333539 on empty sample = -0.05746314
+trained: minimum gap on concepts = 0.026043564 on empty sample = -0.04853812
+trained: minimum gap on concepts = 0.23661923 on empty sample = -0.040454835
+trained: minimum gap on concepts = 0.27457756 on empty sample = -0.04158175
+trained: minimum gap on concepts = -0.038264632 on empty sample = 0.0058061182
+trained: minimum gap on concepts = 0.0720585 on empty sample = -0.052564114
+trained: minimum gap on concepts = 0.043575257 on empty sample = -0.0674921
+trained: minimum gap on concepts = 0.0056268275 on empty sample = 0.070405066
+trained: minimum gap on concepts = 0.046649814 on empty sample = -0.051472336
+trained: minimum gap on concepts = -0.025628418 on empty sample = 0.02182722
+trained: minimum gap on concepts = -0.09785351 on empty sample = -0.019863367
+trained: minimum gap on concepts = 0.06891778 on empty sample = -0.027813315
+trained: minimum gap on concepts = -0.027854532 on empty sample = -0.045968056
+trained: minimum gap on concepts = 0.3874344 on empty sample = -0.014183372
+trained: minimum gap on concepts = 0.3386627 on empty sample = -0.0042657554
+trained: minimum gap on concepts = 0.12665856 on empty sample = 0.03115049
+trained: minimum gap on concepts = 0.056951523 on empty sample = -0.05424857
+trained: minimum gap on concepts = 0.26494506 on empty sample = -0.06028971
+trained: minimum gap on concepts = 0.3042832 on empty sample = -0.13244477
+trained: minimum gap on concepts = 0.010613799 on empty sample = 0.052302122
+trained: minimum gap on concepts = 0.02526772 on empty sample = -0.020863056
+trained: minimum gap on concepts = 0.42265517 on empty sample = -0.011103153
+trained: minimum gap on concepts = -0.041464567 on empty sample = 0.060471088
+trained: minimum gap on concepts = 0.09982991 on empty sample = 0.005774975
+trained: minimum gap on concepts = 0.01328817 on empty sample = 0.08423376
+trained: minimum gap on concepts = 0.080631554 on empty sample = -0.03134659
+trained: minimum gap on concepts = -0.023993611 on empty sample = 0.056432366
+trained: minimum gap on concepts = 0.062483758 on empty sample = -0.04333192
+trained: minimum gap on concepts = 0.06422424 on empty sample = 0.022132397
+trained: minimum gap on concepts = -0.03223476 on empty sample = -0.033044785
+trained: minimum gap on concepts = 0.16645938 on empty sample = 0.07115325
+trained: minimum gap on concepts = 0.35432604 on empty sample = 0.023190498
+trained: minimum gap on concepts = -0.043936968 on empty sample = -0.068250686
+trained: minimum gap on concepts = 0.03933537 on empty sample = 0.028633028
+trained: minimum gap on concepts = 0.1223197 on empty sample = 0.059433818
+trained: minimum gap on concepts = 0.076636255 on empty sample = -0.009184957
+trained: minimum gap on concepts = 0.019754738 on empty sample = -0.010683119
+trained: minimum gap on concepts = 0.62584746 on empty sample = 0.03398907
+trained: minimum gap on concepts = 0.076613516 on empty sample = 0.029053122
+trained: minimum gap on concepts = -0.24423951 on empty sample = 0.079803586
+trained: minimum gap on concepts = 0.278041 on empty sample = 0.121281415
+trained: minimum gap on concepts = -0.0048873425 on empty sample = -0.028862447
+trained: minimum gap on concepts = 0.18087518 on empty sample = 0.04657036
+trained: minimum gap on concepts = 0.07575217 on empty sample = -0.0028157234
+trained: minimum gap on concepts = 0.12671614 on empty sample = 0.04850456
+trained: minimum gap on concepts = 0.30798173 on empty sample = -0.15803242
+trained: minimum gap on concepts = 0.1450603 on empty sample = 0.004779309
+trained: minimum gap on concepts = 0.2601015 on empty sample = 0.11428228
+trained: minimum gap on concepts = -0.08014202 on empty sample = 0.037862062
+trained: minimum gap on concepts = -0.03877911 on empty sample = 0.02483812
+trained: minimum gap on concepts = 0.1406677 on empty sample = 0.0145101845
+trained: minimum gap on concepts = 0.2190102 on empty sample = -0.055581182
+trained: minimum gap on concepts = 0.008164525 on empty sample = 0.03496909
+trained: minimum gap on concepts = -0.026464969 on empty sample = 0.033872277
+trained: minimum gap on concepts = 0.35479188 on empty sample = -0.011407256
+trained: minimum gap on concepts = 0.2023623 on empty sample = 0.03927493
+trained: minimum gap on concepts = 0.045767695 on empty sample = -0.10464111
+trained: minimum gap on concepts = 0.061083883 on empty sample = 0.012689561
+trained: minimum gap on concepts = -0.077406436 on empty sample = 0.013112158
+trained: minimum gap on concepts = -0.029010147 on empty sample = 0.036170334
+trained: minimum gap on concepts = 0.024523765 on empty sample = -0.017781824
+trained: minimum gap on concepts = 0.060371757 on empty sample = -0.03675306
+trained: minimum gap on concepts = 0.008778065 on empty sample = 0.051055014
+trained: minimum gap on concepts = 0.20933169 on empty sample = 0.11407527
+trained: minimum gap on concepts = -0.015070081 on empty sample = 0.08400044
+trained: minimum gap on concepts = 0.043620825 on empty sample = 0.09529409
+trained: minimum gap on concepts = -0.04875639 on empty sample = -0.058713853
+trained: minimum gap on concepts = -0.13205734 on empty sample = 0.12822989
+trained: minimum gap on concepts = 0.006419003 on empty sample = -0.006419003
+trained: minimum gap on concepts = -0.09553826 on empty sample = 0.054416686
+trained: minimum gap on concepts = 0.11597937 on empty sample = -0.056533962
+trained: minimum gap on concepts = 0.18899292 on empty sample = -0.09671819
+trained: minimum gap on concepts = 0.573951 on empty sample = 0.044023186
+trained: minimum gap on concepts = 0.00068840384 on empty sample = -0.010277778
+trained: minimum gap on concepts = -0.00022876263 on empty sample = -0.0017277002
+trained: minimum gap on concepts = 0.06360039 on empty sample = 0.060988784
+trained: minimum gap on concepts = 0.14928296 on empty sample = -0.025530457
+trained: minimum gap on concepts = 0.01723966 on empty sample = -0.038882434
+trained: minimum gap on concepts = 0.021783113 on empty sample = -0.007781267
+trained: minimum gap on concepts = -0.20393926 on empty sample = -0.008362561
+trained: minimum gap on concepts = -0.046215326 on empty sample = 0.045679122
+trained: minimum gap on concepts = 0.065128356 on empty sample = 0.046302438
+trained: minimum gap on concepts = 0.4171498 on empty sample = -0.12320915

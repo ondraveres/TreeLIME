@@ -35,12 +35,16 @@ end
 settings = parse_args(ARGS, _s; as_symbols=true)
 settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
-model_name = "bestmodel.bson"
+model_name = "bestmodel6.bson"
 
 ###############################################################
 # start by loading all samples
 ###############################################################
 samples, labels, concepts = loaddata(settings);
+loaddata(settings)[3]
+concepts
+labels = vcat(labels, fill(2, length(concepts)))
+samples = vcat(samples, concepts)
 
 resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...)
 println("start")
@@ -60,47 +64,58 @@ if !isfile(resultsdir(model_name))
     end
     ds = extractor(JsonGrinder.sample_synthetic(sch))
     good_model, concept_gap = nothing, 0
+    # good_model, concept_gap
+    local model = reflectinmodel(
+        sch,
+        extractor,
+        d -> Dense(d, settings.k, relu),
+        all_imputing=true,
+        # b = Dict("" => d -> Chain(Dense(d, settings.k, relu), Dense(settings.k, 2)))
+    )
+    model = @set model.m = Chain(model.m, Dense(settings.k, 2))
     for i in 1:10
-        global good_model, concept_gap
-        local model = reflectinmodel(
-            sch,
-            extractor,
-            d -> Dense(d, settings.k, relu),
-            all_imputing=true,
-            # b = Dict("" => d -> Chain(Dense(d, settings.k, relu), Dense(settings.k, 2)))
-        )
-        local model = @set model.m = Chain(model.m, Dense(settings.k, 2))
 
+
+        @info "start of epoch $i"
         ###############################################################
         #  train
         ###############################################################
         opt = ADAM()
         ps = Flux.params(model)
         loss = (x, y) -> Flux.logitcrossentropy(model(x), y)
-        data_loader = Flux.DataLoader((trndata, Flux.onehotbatch(labels, 1:2)), batchsize=10, shuffle=true)
-        cb = () -> begin
-            o = model(trndata).data
-            println("crossentropy = ", Flux.logitcrossentropy(o, Flux.onehotbatch(labels, 1:2)), " accuracy = ", mean(Flux.onecold(softmax(o)) .== labels))
-        end
+        data_loader = Flux.DataLoader((trndata, Flux.onehotbatch(labels, 1:2)), batchsize=100, shuffle=true)
+
+
         Flux.Optimise.train!(loss, ps, data_loader, opt)
-        print("trained: ")
+
         soft_model = @set model.m = Chain(model.m, softmax)
         cg = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), 2)[1, 1], concepts))
         eg = ExplainMill.confidencegap(soft_model, extractor(JSON.parse("{}")), 1)[1, 1]
-        println("minimum gap on concepts = $(cg) on empty sample = $(eg)")
-        if cg > 0 && eg > 0
-            if cg > concept_gap
-                good_model, concept_gap = model, cg
-            end
-        end
-        concept_gap > 0.95 && break
+        predictions = model(trndata)
+        accuracy(ds, y) = mean(Flux.onecold(model(ds)) .== y)
+        @info "crossentropy on all samples = ", Flux.logitcrossentropy(predictions, Flux.onehotbatch(labels, 1:2)),
+        @info "accuracy on all samples = ", mean(Flux.onecold(predictions) .== labels)
+        @info "minimum gap on concepts = $(cg) on empty sample = $(eg)"
+        @info "accuracy on concepts = $( accuracy(extractor.(concepts), 2)))"
+        @info "end of epoch $i"
+
+        mean(Flux.onecold(predictions) .== labels)
+
+
+        # if cg > 0 && eg > 0
+        #     if cg > concept_gap
+        #         good_model, concept_gap = model, cg
+        #     end
+        # end
+        # concept_gap > 0.95 && break
     end
     if concept_gap < 0
         error("Failed to train a model")
     end
-    model = good_model
+    #model = good_model
     BSON.@save resultsdir(model_name) model extractor schema
 end
+
 resultsdir()
 using Flux
 

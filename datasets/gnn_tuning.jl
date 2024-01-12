@@ -38,7 +38,7 @@ settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 samples, labels, concepts = loaddata(settings);
 resultsdir(s...) = simdir(settings.dataset, settings.task, "$(settings.incarnation)", s...)
 
-d = BSON.load(resultsdir("newmodel.bson"))
+d = BSON.load(resultsdir(model_name))
 (model, extractor, sch) = d[:model], d[:extractor], d[:schema]
 statlayer = StatsLayer()
 model = @set model.m.m = Chain(model.m.m..., statlayer);
