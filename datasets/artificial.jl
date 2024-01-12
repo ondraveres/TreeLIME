@@ -35,7 +35,7 @@ end
 settings = parse_args(ARGS, _s; as_symbols=true)
 settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
-model_name = "bestmodel6.bson"
+model_name = "thetripleninemodel.bson"
 
 ###############################################################
 # start by loading all samples
@@ -73,7 +73,9 @@ if !isfile(resultsdir(model_name))
         # b = Dict("" => d -> Chain(Dense(d, settings.k, relu), Dense(settings.k, 2)))
     )
     model = @set model.m = Chain(model.m, Dense(settings.k, 2))
-    for i in 1:10
+    i = 0
+    while true
+        global i += 1
 
 
         @info "start of epoch $i"
@@ -93,15 +95,19 @@ if !isfile(resultsdir(model_name))
         eg = ExplainMill.confidencegap(soft_model, extractor(JSON.parse("{}")), 1)[1, 1]
         predictions = model(trndata)
         accuracy(ds, y) = mean(Flux.onecold(model(ds)) .== y)
+        acc = mean(Flux.onecold(predictions) .== labels)
         @info "crossentropy on all samples = ", Flux.logitcrossentropy(predictions, Flux.onehotbatch(labels, 1:2)),
-        @info "accuracy on all samples = ", mean(Flux.onecold(predictions) .== labels)
+        @info "accuracy on all samples = ", acc
         @info "minimum gap on concepts = $(cg) on empty sample = $(eg)"
         @info "accuracy on concepts = $( accuracy(extractor.(concepts), 2)))"
         @info "end of epoch $i"
+        flush(stdout)
 
         mean(Flux.onecold(predictions) .== labels)
 
-
+        if (acc > 0.999)
+            break
+        end
         # if cg > 0 && eg > 0
         #     if cg > concept_gap
         #         good_model, concept_gap = model, cg
@@ -159,7 +165,6 @@ i = strain
 concept_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], concepts))
 sample_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], samples[labels.==2]))
 threshold_gap = floor(0.9 * concept_gap, digits=2)
-PrintTypesTersely.on()
 ds = onlycorrect(ds, strain, threshold_gap)
 @info "minimum gap on concepts = $(concept_gap) on samples = $(sample_gap)"
 
@@ -172,27 +177,31 @@ variants = vcat(
 ds = ds[1:min(numobs(ds), 100)]
 function getexplainer(name)
     if name == "stochastic"
-        return (ExplainMill.StochasticExplainer(), 0)
+        return ExplainMill.StochasticExplainer()
     elseif name == "grad"
-        return (ExplainMill.GradExplainer2(), 0)
+        return ExplainMill.GradExplainer2()
     elseif name == "gnn"
-        return (ExplainMill.GnnExplainer(), 200)
+        return ExplainMill.GnnExplainer()
     elseif name == "gnn2"
-        return (ExplainMill.GnnExplainer(1.0f0, 0.1f0), 200)
+        return ExplainMill.GnnExplainer()
     elseif name == "banz"
-        return (ExplainMill.DafExplainer(true, false), 200)
+        return ExplainMill.DafExplainer()
     else
         error("unknown eplainer $name")
     end
 end
 
+ExplainMill.DafExplainer()
+dump(statlayer)
 exdf = DataFrame()
 for (name, pruning_method) in variants
-    e, n = getexplainer(name)
-    addexperiment(DataFrame(), e, ds[1], logsoft_model, i, n, threshold_gap, name, pruning_method, 1, settings, statlayer)
+    e = getexplainer(name)
+    @info "explainer $e on $name with $pruning_method"
+    flush(stdout)
+    #addexperiment(DataFrame(), e, ds[1], logsoft_model, i, n, threshold_gap, name, pruning_method, 1, settings, statlayer)
     for j in 1:numobs(ds)
         global exdf
-        exdf = addexperiment(exdf, e, ds[j], logsoft_model, i, n, threshold_gap, name, pruning_method, j, settings, statlayer)
+        exdf = addexperiment(exdf, e, ds[j], logsoft_model, i, 0, threshold_gap, name, pruning_method, j, settings, statlayer)
     end
     BSON.@save resultsdir("stats.bson") exdf
 end

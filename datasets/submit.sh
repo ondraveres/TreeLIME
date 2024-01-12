@@ -5,7 +5,7 @@ for d in mutagenesis hepatitis deviceid; do
         counter=0
         for c in `ls ../../data/raw/${d}/${t} | grep concept`; do 
             if [ $counter -ge 5 ]; then
-                exit 0
+                #exit 0
             fi
             i=${c##*/}
             i=${c%_concept.jsonl}
