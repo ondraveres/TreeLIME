@@ -1,37 +1,41 @@
 using Zygote
 function stats(dd, ms, extractor, soft_model, i, concepts)
-    try
-        gap = ExplainMill.confidencegap(soft_model, prune(dd, ms), i)
-        fv = ExplainMill.FlatView(ms)
-        logical = ExplainMill.e2boolean(ms, dd, extractor)[1]
-        ce = map(c -> jsondiff(c, logical), concepts)
-        ec = map(c -> jsondiff(logical, c), concepts)
-        return ((gap=gap,
-            misses_nodes=minimum(nnodes(c) for c in ce),
-            misses_leaves=minimum(nleaves(c) for c in ce),
-            excess_nodes=minimum(nnodes(c) for c in ec),
-            excess_leaves=minimum(nleaves(c) for c in ec),
-            nleaves=nleaves(logical),
-            nnodes=nnodes(logical),
-            cleaves=nleaves(concepts),
-            cnodes=nnodes(concepts),
-            selected=length(ExplainMill.useditems(fv)),
-            flatlength=length(fv)))
-    catch
-        serialize("/tmp/debug.jls", (dd, ms, extractor, soft_model, i, concepts))
-        return ((gap=missing,
-            misses_nodes=missing,
-            misses_leaves=missing,
-            excess_nodes=missing,
-            excess_leaves=missing,
-            nleaves=missing,
-            nnodes=missing,
-            cleaves=missing,
-            cnodes=missing,
-            selected=missing,
-            flatlength=missing,
-        ))
-    end
+    # try
+    gap = ExplainMill.confidencegap(soft_model, dd[ms], i)
+    fv = ExplainMill.FlatView(ms)
+    logical = ExplainMill.e2boolean(dd, ms, extractor)
+    ce = map(c -> jsondiff(c, logical), concepts)
+    ec = map(c -> jsondiff(logical, c), concepts)
+    return ((gap=gap,
+        misses_nodes=minimum(nnodes(c) for c in ce),
+        misses_leaves=minimum(nleaves(c) for c in ce),
+        excess_nodes=minimum(nnodes(c) for c in ec),
+        excess_leaves=minimum(nleaves(c) for c in ec),
+        nleaves=nleaves(logical),
+        nnodes=nnodes(logical),
+        cleaves=nleaves(concepts),
+        cnodes=nnodes(concepts),
+        selected=length(ExplainMill.useditems(fv)),
+        flatlength=length(fv)))
+    # catch e
+    #     @show dd
+    #     @show ms
+    #     @warn e
+    #     @warn "failed to explain"
+    #     serialize("/tmp/debug.jls", (dd, ms, extractor, soft_model, i, concepts))
+    #     return ((gap=missing,
+    #         misses_nodes=missing,
+    #         misses_leaves=missing,
+    #         excess_nodes=missing,
+    #         excess_leaves=missing,
+    #         nleaves=missing,
+    #         nnodes=missing,
+    #         cleaves=missing,
+    #         cnodes=missing,
+    #         selected=missing,
+    #         flatlength=missing,
+    #     ))
+    # end
 end
 
 
@@ -52,7 +56,7 @@ end
 
 function addexperiment(exdf, e, dd, logsoft_model, i, n, threshold_gap, name, pruning_method, sampleno, settings)
     isdone(exdf, name, pruning_method, sampleno, n) && return (exdf)
-    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, i, n, pruning_method=pruning_method, threshold=threshold_gap)
+    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, i, pruning_method=pruning_method, threshold=threshold_gap)
     s = merge((
             name=name,
             pruning_method=pruning_method,
@@ -70,7 +74,7 @@ end
 
 function addexperimentd(exdf, e, dd, logsoft_model, i, n, threshold_gap, name, pruning_method, sampleno, settings)
     isdone(exdf, name, pruning_method, sampleno, n) && return (exdf)
-    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, i, n, pruning_method=pruning_method, threshold=threshold_gap)
+    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, i, pruning_method=pruning_method, threshold=threshold_gap)
     s = merge((
             name=name,
             pruning_method=pruning_method,
@@ -112,7 +116,7 @@ end
 function addexperiment(exdf, e, dd, logsoft_model, i, n, threshold_gap, name, pruning_method, sampleno, settings, statlayer::StatsLayer)
     isdone(exdf, name, pruning_method, sampleno, n) && return (exdf)
     reset!(statlayer)
-    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model,# i, n,
+    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, i,# i, n,
         pruning_method=pruning_method, abs_tol=threshold_gap) #threshold = threshold_gap)
     s = merge((
             name=name,

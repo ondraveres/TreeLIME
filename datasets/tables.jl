@@ -61,6 +61,10 @@ df = mapreduce(vcat, ["deviceid", "hepatitis", "mutagenesis"]) do problem
     end
 end
 
+using BSON
+
+myyy = BSON.load(joinpath(srcdir, "mutagenesis/one_of_2_5trees/1", "stats.bson"))[:exdf]
+
 df
 
 #####

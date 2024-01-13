@@ -16,7 +16,7 @@ using ExplainMill
 using Serialization
 using Setfield
 using DataFrames
-#using ExplainMill: jsondiff, nnodes, nleaves
+using ExplainMill: jsondiff, nnodes, nleaves
 include("common.jl")
 include("loader.jl")
 include("stats.jl")
@@ -35,7 +35,7 @@ end
 settings = parse_args(ARGS, _s; as_symbols=true)
 settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
-model_name = "thetripleninemodel.bson"
+model_name = "thenivefivemodel.bson"
 
 ###############################################################
 # start by loading all samples
@@ -105,7 +105,7 @@ if !isfile(resultsdir(model_name))
 
         mean(Flux.onecold(predictions) .== labels)
 
-        if (acc > 0.999)
+        if (acc > 0.95)
             break
         end
         # if cg > 0 && eg > 0
@@ -191,9 +191,12 @@ function getexplainer(name)
     end
 end
 
+PrintTypesTersely.on()
+
 ExplainMill.DafExplainer()
 dump(statlayer)
 exdf = DataFrame()
+numobs(ds)
 for (name, pruning_method) in variants
     e = getexplainer(name)
     @info "explainer $e on $name with $pruning_method"
@@ -201,11 +204,20 @@ for (name, pruning_method) in variants
     #addexperiment(DataFrame(), e, ds[1], logsoft_model, i, n, threshold_gap, name, pruning_method, 1, settings, statlayer)
     for j in 1:numobs(ds)
         global exdf
-        exdf = addexperiment(exdf, e, ds[j], logsoft_model, i, 0, threshold_gap, name, pruning_method, j, settings, statlayer)
+        exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0, threshold_gap, name, pruning_method, j, settings, statlayer)
     end
-    BSON.@save resultsdir("stats.bson") exdf
+    BSON.@save resultsdir("ninefivestats.bson") exdf
 end
+variants
+ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, 2, pruning_method=:Flat_Gadd,)
+logical = ExplainMill.e2boolean(ds[1], ms, extractor)
+ce = map(c -> jsondiff(c, logical), concepts)
 
+concepts[1]
+logical
+jsondiff(concepts[1], logical)
+concepts[1]
+concepts[2]
 println("done")
 println("resultsdir() = ", resultsdir())
 
