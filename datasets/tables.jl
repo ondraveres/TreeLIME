@@ -13,7 +13,12 @@ end
 
 function meanandconfidence(x)
     x = skipmissing(x)
-    ci = confint(OneSampleTTest(Float64.(collect(x))))
+    ci = [0, 0]
+    try
+        ci = confint(OneSampleTTest(Float64.(collect(x))))
+    catch
+        @show x
+    end
     s = @sprintf("%.2f", ci[2] - ci[1])
     s = s[2:end]
     v = @sprintf("%.2f", mean(x))
@@ -25,7 +30,7 @@ end
 #####
 function filtercase(df, ranking::Nothing, level_by_level)
     df[!, :pruning_method] .= String.(df[!, :pruning_method])
-    pms = level_by_level ? ["LbyL_GAdd", "LbyL_GArr", "LbyL_GArrft"] : ["Flat_GAdd", "Flat_GArr", "Flat_GArrft"]
+    pms = level_by_level ? ["LbyL_Gadd", "LbyL_Garr", "LbyL_Garrft"] : ["Flat_Gadd", "Flat_Garr", "Flat_Garrft"]
     df = filter(r -> r.pruning_method ∈ pms, df)
     exportcase(df, pms, level_by_level)
 end
@@ -53,6 +58,7 @@ end
 ####
 #	Aggregate results to the final table
 ####
+
 df = mapreduce(vcat, ["deviceid", "hepatitis", "mutagenesis"]) do problem
     mapreduce(vcat, readdir(joinpath(srcdir, problem))) do task
         mapreduce(vcat, readdir(joinpath(srcdir, problem, task))) do i
@@ -61,9 +67,20 @@ df = mapreduce(vcat, ["deviceid", "hepatitis", "mutagenesis"]) do problem
     end
 end
 
+
 using BSON
 
-myyy = BSON.load(joinpath(srcdir, "mutagenesis/one_of_2_5trees/1", "stats.bson"))[:exdf]
+myyy = BSON.load(joinpath(srcdir, "mutagenesis/one_of_1_5trees/1", "2ninefivestats.bson"))[:exdf]
+
+
+myyy.pruning_method
+xdd = filter(r -> r.pruning_method == "LbyL_HAdd", myyy)[!, :excess_leaves]
+df = myyy
+df[!, :pruning_method] .= String.(df[!, :pruning_method])
+pms = true ? ["LbyL_HAdd", "LbyL_HArr", "LbyL_HArrft"] : ["Flat_HAdd", "Flat_HArr", "Flat_HArrft"]
+df = filter(r -> r.pruning_method ∈ pms, df)
+exportcase(df, pms, true)
+[!, :excess_leaves]
 
 df
 
@@ -76,14 +93,16 @@ df = open("../../data/table1.csv.gz") do io
 end
 
 
+
+
 function maketable(df)
     mapreduce(vcat, [false, true]) do b
         uninformative = filtercase(df, nothing, b)
-        heuristic = mapreduce(r -> filtercase(df, r, b), vcat, ["GNN", "GNN2", "Grad", "Banz", "Rnd"])
+        heuristic = mapreduce(r -> filtercase(df, r, b), vcat, ["gnn", "gnn2", "grad", "banz", "stochastic"])
         vcat(uninformative, heuristic)
     end
 end
-t1 = maketable(df)
+t1 = maketable(myyy)
 uninformative = filtercase(df, nothing, true)
 construct = df[!, :pruning_method]
 heuristic = mapreduce(r -> filtercase(df, r, true), vcat, ["GNN", "GNN2", "Grad", "Banz", "Rnd"])

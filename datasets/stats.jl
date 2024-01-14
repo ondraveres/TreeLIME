@@ -55,7 +55,7 @@ function isdone(exdf, name, pruning_method, sampleno, n)
 end
 
 function addexperiment(exdf, e, dd, logsoft_model, i, n, threshold_gap, name, pruning_method, sampleno, settings)
-    isdone(exdf, name, pruning_method, sampleno, n) && return (exdf)
+    # isdone(exdf, name, pruning_method, sampleno, n) && return (exdf)
     t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, i, pruning_method=pruning_method, threshold=threshold_gap)
     s = merge((
             name=name,
@@ -73,7 +73,7 @@ function addexperiment(exdf, e, dd, logsoft_model, i, n, threshold_gap, name, pr
 end
 
 function addexperimentd(exdf, e, dd, logsoft_model, i, n, threshold_gap, name, pruning_method, sampleno, settings)
-    isdone(exdf, name, pruning_method, sampleno, n) && return (exdf)
+    #isdone(exdf, name, pruning_method, sampleno, n) && return (exdf)
     t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, i, pruning_method=pruning_method, threshold=threshold_gap)
     s = merge((
             name=name,

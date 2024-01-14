@@ -28,7 +28,7 @@ PrintTypesTersely.off()
 _s = ArgParseSettings()
 @add_arg_table! _s begin
     ("--dataset"; default = "mutagenesis"; arg_type = String)
-    ("--task"; default = "one_of_2_5trees"; arg_type = String)
+    ("--task"; default = "one_of_1_5trees"; arg_type = String)
     ("--incarnation"; default = 1; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
@@ -52,6 +52,7 @@ println("resultsdir() = ", resultsdir())
 ###############################################################
 # create schema of the JSON
 ###############################################################
+
 if !isfile(resultsdir(model_name))
     !isdir(resultsdir()) && mkpath(resultsdir())
     sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
@@ -133,7 +134,6 @@ d = BSON.load(resultsdir(model_name))
 statlayer = StatsLayer()
 model = @set model.m = Chain(model.m, statlayer);
 soft_model = @set model.m = Chain(model.m, softmax);
-soft_model = @set model.m = Chain(model.m, softmax);
 logsoft_model = @set model.m = Chain(model.m, logsoftmax);
 
 
@@ -141,11 +141,12 @@ logsoft_model = @set model.m = Chain(model.m, logsoftmax);
 #  Helper functions for explainability
 ###############################################################
 const ci = PrayTools.classindexes(labels);
+ci
 
 ci
 
 function loadclass(k, n=typemax(Int))
-    dss = map(extractor, sample(samples[ci[k]], min(n, length(ci[k])), replace=false))
+    dss = map(s -> extractor(s, store_input=true), sample(samples[ci[k]], min(n, length(ci[k])), replace=false))
     reduce(catobs, dss)
 end
 
@@ -157,24 +158,39 @@ function onlycorrect(dss, i, min_confidence=0)
     correct = ExplainMill.confidencegap(soft_model, dss, i) .>= min_confidence
     dss[correct[:]]
 end
-
+mean(labels)
 strain = 2
 Random.seed!(settings.incarnation)
 ds = loadclass(strain, 1000)
+ds[1][:lumo]
+ds[1][:lumo]
+extractor(samples[10111], store_input=true).metadata
+samples[10111]
 i = strain
 concept_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], concepts))
 sample_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], samples[labels.==2]))
-threshold_gap = floor(0.9 * concept_gap, digits=2)
+threshold_gap = 0.7#floor(0.9 * concept_gap, digits=2)
+# correct = predict(soft_model, ds, [1, 2])
+# argmax(soft_model(ds[1]))
+# soft_model(ds)
+# mean(Flux.onecold(model(ds) .== labels))
+# mean(labels)
+# mean(Flux.onecold(soft_model(ds)) .== labels)
+# mean(correct)
+
+
+ExplainMill.confidencegap(soft_model, ds, 2)
 ds = onlycorrect(ds, strain, threshold_gap)
+onlycorrect(ds, strain, 0.7)
 @info "minimum gap on concepts = $(concept_gap) on samples = $(sample_gap)"
 
 heuristic = [:Flat_HAdd, :Flat_HArr, :Flat_HArrft, :LbyL_HAdd, :LbyL_HArr, :LbyL_HArrft]
-uninformative = [:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :Flat_Gadd, :Flat_Garr, :Flat_Garrft]
+uninformative = [:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
 variants = vcat(
     collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:],
     collect(Iterators.product(["grad", "gnn", "gnn2", "banz"], vcat(heuristic)))[:],
 )
-ds = ds[1:min(numobs(ds), 100)]
+ds = ds[1:min(numobs(ds), 5)]
 function getexplainer(name)
     if name == "stochastic"
         return ExplainMill.StochasticExplainer()
@@ -197,6 +213,8 @@ ExplainMill.DafExplainer()
 dump(statlayer)
 exdf = DataFrame()
 numobs(ds)
+variants
+dump(variants)
 for (name, pruning_method) in variants
     e = getexplainer(name)
     @info "explainer $e on $name with $pruning_method"
@@ -206,18 +224,49 @@ for (name, pruning_method) in variants
         global exdf
         exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0, threshold_gap, name, pruning_method, j, settings, statlayer)
     end
-    BSON.@save resultsdir("ninefivestats.bson") exdf
+    BSON.@save resultsdir("2ninefivestats.bson") exdf
 end
-variants
-ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, 2, pruning_method=:Flat_Gadd,)
+### the players
+ds[1]
+model(ds[1])
+log.(soft_model(ds[1]))
+logsoft_model(ds[1])
+concepts[1]
+ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, 2, pruning_method=:Flat_Gadd)
 logical = ExplainMill.e2boolean(ds[1], ms, extractor)
 ce = map(c -> jsondiff(c, logical), concepts)
-
+ec = map(c -> jsondiff(logical, c), concepts)
+logical
+ds[20][:lumo]
 concepts[1]
 logical
-jsondiff(concepts[1], logical)
+ec[1]
+ce[1]
+ds[1][ms]
 concepts[1]
-concepts[2]
+gap = ExplainMill.confidencegap(soft_model, ds[1][ms], 2)
+fv = ExplainMill.FlatView(ms)
+logical = ExplainMill.e2boolean(ds[1], ms, extractor)
+ce = map(c -> jsondiff(c, logical), concepts)
+ec = map(c -> jsondiff(logical, c), concepts)
+
+ce = jsondiff(concepts[1], logical)
+ec = jsondiff(logical, concepts[1])
+
+ce = jsondiff(concepts[1], logical)
+ec = jsondiff(logical, concepts[1])
+
+c = concepts[1]
+logical
+c
+ec
+ce
+ds[1]
+logical = ExplainMill.e2boolean(ds[1], ms, extractor)
+logical
+logical
+excess_nodes = nnodes(ec)
+mynnodes = nnodes(logical)
 println("done")
 println("resultsdir() = ", resultsdir())
 
