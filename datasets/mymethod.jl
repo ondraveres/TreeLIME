@@ -1,64 +1,61 @@
 # for ((i=1;i<=20;i+=1)); do  for d in  one_of_1_2trees  one_of_1_5trees  one_of_1_paths  one_of_2_5trees  one_of_2_paths  one_of_5_paths ; do  julia -p 24 artificial.jl --dataset $d --incarnation $i ; done ; done
-
-using Pkg;
-cd("/home/veresond/ExplainMill.jl/myscripts/datasets");
-Pkg.activate("..");
-using ArgParse;
-using Flux;
-using Mill;
-using JsonGrinder;
-using JSON;
-using BSON;
-using Statistics;
-using IterTools;
-using PrayTools;
-using StatsBase;
-using ExplainMill;
-using Serialization;
-using Setfield;
-using DataFrames;
-using ExplainMill: jsondiff, nnodes, nleaves;
-include("common.jl");
-include("loader.jl");
-include("stats.jl");
-using PrintTypesTersely;
+using Pkg
+cd("/home/veresond/ExplainMill.jl/myscripts/datasets")
+Pkg.activate("..")
+using ArgParse
+using Flux
+using Mill
+using JsonGrinder
+using JSON
+using BSON
+using Statistics
+using IterTools
+using PrayTools
+using StatsBase
+using ExplainMill
+using Serialization
+using Setfield
+using DataFrames
+using ExplainMill: jsondiff, nnodes, nleaves
+include("common.jl")
+include("loader.jl")
+include("stats.jl")
+using PrintTypesTersely
 function StatsBase.predict(mymodel::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
     o = mapslices(x -> ikeyvalmap[argmax(x)], mymodel(ds), dims=1)
-end;
-PrintTypesTersely.off();
-_s = ArgParseSettings();
+end
+PrintTypesTersely.off()
+_s = ArgParseSettings()
 @add_arg_table! _s begin
     ("--dataset"; default = "mutagenesis"; arg_type = String)
     ("--task"; default = "one_of_1_5trees"; arg_type = String)
     ("--incarnation"; default = 1; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
-;
-settings = parse_args(ARGS, _s; as_symbols=true);
+settings = parse_args(ARGS, _s; as_symbols=true)
 
 
 
-settings = NamedTuple{Tuple(keys(settings))}(values(settings));
+settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
 model_name = "hundreditermodel22_1.bson"
 
 ###############################################################
 # start by loading all samples
 ###############################################################
-;
 samples, labels, concepts = loaddata(settings);
-loaddata(settings)[3];
-concepts;
-labels = vcat(labels, fill(2, length(concepts)));
-samples = vcat(samples, concepts);
+loaddata(settings)[3]
+concepts
+labels = vcat(labels, fill(2, length(concepts)))
+samples = vcat(samples, concepts)
 
-resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...);
-println("start");
-println("resultsdir() = ", resultsdir());
+resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...)
+println("start")
+println("resultsdir() = ", resultsdir())
 ###############################################################
 # create schema of the JSON
 ###############################################################
-sch = JsonGrinder.schema(vcat(samples, concepts, Dict()));
+sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
 if !isfile(resultsdir(model_name))
     !isdir(resultsdir()) && mkpath(resultsdir())
     sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
@@ -126,20 +123,19 @@ if !isfile(resultsdir(model_name))
     end
     #model = good_model
     BSON.@save resultsdir(model_name) model extractor sch
-end;
+end
 
 
-resultsdir();
-using Flux;
-isfile(resultsdir(model_name));
-d = BSON.load(resultsdir(model_name));
+resultsdir()
+using Flux
+isfile(resultsdir(model_name))
+d = BSON.load(resultsdir(model_name))
 
 
 
 
-(model, extractor, sch) = d[:model], d[:extractor], d[:sch];
+(model, extractor, sch) = d[:model], d[:extractor], d[:sch]
 statlayer = StatsLayer()
-;
 model = @set model.m = Chain(model.m, statlayer);
 soft_model = @set model.m = Chain(model.m, softmax);
 logsoft_model = @set model.m = Chain(model.m, logsoftmax);
@@ -149,14 +145,14 @@ logsoft_model = @set model.m = Chain(model.m, logsoftmax);
 #  Helper functions for explainability
 ###############################################################
 const ci = PrayTools.classindexes(labels);
-ci;
+ci
 
-ci;
+ci
 
 function loadclass(k, n=typemax(Int))
     dss = map(s -> extractor(s, store_input=true), sample(samples[ci[k]], min(n, length(ci[k])), replace=false))
     reduce(catobs, dss)
-end;
+end
 
 
 function onlycorrect(dss, i, min_confidence=0)
@@ -165,17 +161,17 @@ function onlycorrect(dss, i, min_confidence=0)
     min_confidence == 0 && return (dss)
     correct = ExplainMill.confidencegap(soft_model, dss, i) .>= min_confidence
     dss[correct[:]]
-end;
+end
 
-Random.seed!(settings.incarnation);
-strain = 2;
-ds = loadclass(strain, 1000);
+Random.seed!(settings.incarnation)
+strain = 2
+ds = loadclass(strain, 1000)
 
-extractor(samples[10111], store_input=true).metadata;
-i = strain;
-concept_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], concepts));
-sample_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], samples[labels.==2]));
-threshold_gap = 0.5;#floor(0.9 * concept_gap, digits=2)
+extractor(samples[10111], store_input=true).metadata
+i = strain
+concept_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], concepts))
+sample_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], samples[labels.==2]))
+threshold_gap = 0.5#floor(0.9 * concept_gap, digits=2)
 # correct = predict(soft_model, ds, [1, 2])
 # argmax(soft_model(ds[1]))
 # soft_model(ds)
@@ -186,17 +182,17 @@ threshold_gap = 0.5;#floor(0.9 * concept_gap, digits=2)
 
 
 # ExplainMill.confidencegap(soft_model, ds, 2)
-correct_ds = onlycorrect(ds, strain, 0.1);
-ds = correct_ds;
-@info "minimum gap on concepts = $(concept_gap) on samples = $(sample_gap)";
+correct_ds = onlycorrect(ds, strain, 0.1)
+ds = correct_ds
+@info "minimum gap on concepts = $(concept_gap) on samples = $(sample_gap)"
 
-heuristic = [:Flat_HAdd, :Flat_HArr, :Flat_HArrft, :LbyL_HAdd, :LbyL_HArr, :LbyL_HArrft];
-uninformative = [:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft];
+heuristic = [:Flat_HAdd, :Flat_HArr, :Flat_HArrft, :LbyL_HAdd, :LbyL_HArr, :LbyL_HArrft]
+uninformative = [:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
 variants = vcat(
     collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:],
     collect(Iterators.product(["grad", "gnn", "gnn2", "banz"], vcat(heuristic)))[:],
-);
-ds = ds[1:min(numobs(ds), 100)];
+)
+ds = ds[1:min(numobs(ds), 100)]
 function getexplainer(name)
     if name == "stochastic"
         return ExplainMill.StochasticExplainer()
@@ -211,14 +207,14 @@ function getexplainer(name)
     else
         error("unknown eplainer $name")
     end
-end;
+end
 
-PrintTypesTersely.on();
+PrintTypesTersely.on()
 
-ExplainMill.DafExplainer();
-exdf = DataFrame();
-numobs(ds);
-variants;
+ExplainMill.DafExplainer()
+exdf = DataFrame()
+numobs(ds)
+variants
 if !isfile(resultsdir("stats_" * model_name))
     for (name, pruning_method) in variants
         e = getexplainer(name)
@@ -231,8 +227,7 @@ if !isfile(resultsdir("stats_" * model_name))
         end
         BSON.@save resultsdir("stats_" * model_name) exdf
     end
-end;
-using HierarchicalUtils
+end
 ### the real deal
 function iterate_over(mask, ds, extractor, sch)
     # Iterate over the keys of the dictionaries
@@ -251,22 +246,22 @@ function iterate_over(mask, ds, extractor, sch)
 end
 
 ### the players
+ds[1]
 PrintTypesTersely.off()
-
-sample = ds[1]
-
-mask = ExplainMill.create_mask_structure(sample, d -> ExplainMill.ParticipationTracker(SimpleMask(ones(Bool, d))))
-
+o = softmax(model(ds))
+eltype(o)
+typeof(true)
+mask = ExplainMill.create_mask_structure(ds[1], d -> ExplainMill.ParticipationTracker(SimpleMask(ones(Bool, d))))
+dump(mask)
+model(ds[1])
 sch[:lumo]
-sample[:lumo]
+ds[1][:lumo]
 extractor[:lumo]
-mask[:lumo]
+dump(mask[:lumo])
 
-printtree(sample)
-
-typeof(sample)
-
+typeof(ds[1])
 iterate_over(mask, ds[1], extractor, sch)
+typeof(sch)
 
 
 mk = ExplainMill.stats(ExplainMill.StochasticExplainer(), ds[1], model)
@@ -275,37 +270,6 @@ o = softmax(model(ds[1]))[:]
 class = argmax(softmax(model(ds[1]))[:])
 f = () -> softmax(model(ds[1][mk]))[class] - τ
 ExplainMill.levelbylevelsearch!(f, mask)
-
-logical = ExplainMill.e2boolean(ds[1], mask, extractor)
-
-
-typeof(Mill.children(sample))
-
-Mill.children(sch)
-
-for (name, value) in pairs(Mill.children(ds))
-    println("Name: ", name)
-    println("Value: ", value)
-    @info Mill.NodeType(value)
-end
-
-extractor[:atoms]
-
-Mill.children(extractor[:atoms].item)
-
-HierarchicalUtils.nleafs(sample)
-
-NodeIterator(sample) |> collect
-
-LeafIterator(sample, mask) |> collect
-LeafIterator(mask) |> collect
-
-leafmap!(sample, mask, sch, extractor; complete=false, order=LevelOrder()) do (n1, n2, n3, n4)
-    @show n1
-    @show n2
-    @show n3
-    @show n4
-end
 
 dump(ds[1][mask])
 
