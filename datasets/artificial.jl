@@ -33,9 +33,12 @@ _s = ArgParseSettings()
     ("-k"; default = 5; arg_type = Int)
 end
 settings = parse_args(ARGS, _s; as_symbols=true)
+
+
+
 settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
-model_name = "thenivefivemodel.bson"
+model_name = "hundreditermodel17_1.bson"
 
 ###############################################################
 # start by loading all samples
@@ -53,7 +56,7 @@ println("resultsdir() = ", resultsdir())
 # create schema of the JSON
 ###############################################################
 
-if !isfile(resultsdir(model_name))
+if isfile(resultsdir(model_name))
     !isdir(resultsdir()) && mkpath(resultsdir())
     sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
     extractor = suggestextractor(sch)
@@ -74,9 +77,8 @@ if !isfile(resultsdir(model_name))
         # b = Dict("" => d -> Chain(Dense(d, settings.k, relu), Dense(settings.k, 2)))
     )
     model = @set model.m = Chain(model.m, Dense(settings.k, 2))
-    i = 0
-    while true
-        global i += 1
+    for i in 1:10
+
 
 
         @info "start of epoch $i"
@@ -123,6 +125,7 @@ if !isfile(resultsdir(model_name))
     BSON.@save resultsdir(model_name) model extractor schema
 end
 
+
 resultsdir()
 using Flux
 
@@ -158,14 +161,12 @@ function onlycorrect(dss, i, min_confidence=0)
     correct = ExplainMill.confidencegap(soft_model, dss, i) .>= min_confidence
     dss[correct[:]]
 end
-mean(labels)
-strain = 2
+
 Random.seed!(settings.incarnation)
+strain = 2
 ds = loadclass(strain, 1000)
-ds[1][:lumo]
-ds[1][:lumo]
+
 extractor(samples[10111], store_input=true).metadata
-samples[10111]
 i = strain
 concept_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], concepts))
 sample_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], samples[labels.==2]))
@@ -179,9 +180,8 @@ threshold_gap = 0.7#floor(0.9 * concept_gap, digits=2)
 # mean(correct)
 
 
-ExplainMill.confidencegap(soft_model, ds, 2)
+# ExplainMill.confidencegap(soft_model, ds, 2)
 ds = onlycorrect(ds, strain, threshold_gap)
-onlycorrect(ds, strain, 0.7)
 @info "minimum gap on concepts = $(concept_gap) on samples = $(sample_gap)"
 
 heuristic = [:Flat_HAdd, :Flat_HArr, :Flat_HArrft, :LbyL_HAdd, :LbyL_HArr, :LbyL_HArrft]
@@ -190,7 +190,7 @@ variants = vcat(
     collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:],
     collect(Iterators.product(["grad", "gnn", "gnn2", "banz"], vcat(heuristic)))[:],
 )
-ds = ds[1:min(numobs(ds), 5)]
+ds = ds[1:min(numobs(ds), 100)]
 function getexplainer(name)
     if name == "stochastic"
         return ExplainMill.StochasticExplainer()
@@ -210,30 +210,39 @@ end
 PrintTypesTersely.on()
 
 ExplainMill.DafExplainer()
-dump(statlayer)
 exdf = DataFrame()
 numobs(ds)
 variants
-dump(variants)
-for (name, pruning_method) in variants
-    e = getexplainer(name)
-    @info "explainer $e on $name with $pruning_method"
-    flush(stdout)
-    #addexperiment(DataFrame(), e, ds[1], logsoft_model, i, n, threshold_gap, name, pruning_method, 1, settings, statlayer)
-    for j in 1:numobs(ds)
-        global exdf
-        exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0, threshold_gap, name, pruning_method, j, settings, statlayer)
+if !isfile(resultsdir("stats_" * model_name))
+    for (name, pruning_method) in variants
+        e = getexplainer(name)
+        @info "explainer $e on $name with $pruning_method"
+        flush(stdout)
+        #addexperiment(DataFrame(), e, ds[1], logsoft_model, i, n, threshold_gap, name, pruning_method, 1, settings, statlayer)
+        for j in 1:numobs(ds)
+            global exdf
+            exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0, threshold_gap, name, pruning_method, j, settings, statlayer)
+        end
+        BSON.@save resultsdir("stats_" * model_name) exdf
     end
-    BSON.@save resultsdir("2ninefivestats.bson") exdf
 end
 ### the players
 ds[1]
 model(ds[1])
+ds
+
+
+
 log.(soft_model(ds[1]))
 logsoft_model(ds[1])
 concepts[1]
-ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, 2, pruning_method=:Flat_Gadd)
+ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, pruning_method=:Flat_Gadd)
 logical = ExplainMill.e2boolean(ds[1], ms, extractor)
+logical
+PrintTypesTersely.off()
+repr(logical)
+repr(concepts[1])
+concepts[1]
 ce = map(c -> jsondiff(c, logical), concepts)
 ec = map(c -> jsondiff(logical, c), concepts)
 logical

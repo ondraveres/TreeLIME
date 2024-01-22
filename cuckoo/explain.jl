@@ -1,30 +1,45 @@
 using Pkg
+cd("/home/veresond/ExplainMill.jl/myscripts/cuckoo")
 Pkg.activate("..")
 using Flux, Mill, JsonGrinder, ArgParse, Setfield, Serialization, ExplainMill, DataFrames, BSON
-using Mill: nobs
+using Mill: numobs
+using JLD2
 
 include("common.jl")
 
 _s = ArgParseSettings()
 @add_arg_table! _s begin
-  ("--name"; default="banz";arg_type=String);
-  ("--pruning_method"; default="LbyL_HArr";arg_type=String);
-  ("-i"; default=4;arg_type=Int);
+  ("--name"; default = "banz"; arg_type = String)
+  ("--pruning_method"; default = "LbyL_HArr"; arg_type = String)
+  ("-i"; default = 4; arg_type = Int)
 end
 
 settings = parse_args(ARGS, _s; as_symbols=true)
 settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 modeldir(s...) = joinpath("../../data/sims/cuckoo/", s...)
 
+modeldir("extractor.jls")
+
+datadir(s...) = joinpath("../../data/sims/cuckoo/extracted_ben/", s...)
+
+deserialize(datadir("clean1_10.jls"))
+
+data = nothing
+using PrintTypesTersely
+PrintTypesTersely.off()
+BSON.@load datadir("clean1_10.bson") mydata
+data
+
 extractor = deserialize(modeldir("extractor.jls"));
+@load modeldir("extractor.jld2") extractor
 smodel = deserialize(modeldir("model.jls"));
 model = smodel.m;
 
 model = f32(@set model.m.m = Chain(model.m.m, smodel.severity));
 statlayer = StatsLayer()
-model = @set model.m.m = Chain(model.m.m...,  statlayer);
-soft_model = @set model.m.m = Chain(model.m.m...,  softmax);
-logsoft_model = @set model.m.m = Chain(model.m.m...,  logsoftmax);
+model = @set model.m.m = Chain(model.m.m..., statlayer);
+soft_model = @set model.m.m = Chain(model.m.m..., softmax);
+logsoft_model = @set model.m.m = Chain(model.m.m..., logsoftmax);
 
 name, pruning_method = settings[:name], Symbol(settings[:pruning_method])
 e, n = getexplainer(name)
@@ -43,5 +58,5 @@ r = samplesizes[settings[:i], :]
 ds = ff32(deserialize(modeldir(r.filename))[r.j]);
 i = Int(startswith(r.filename, "extracted_mal")) + 1
 gap = ExplainMill.confidencegap(soft_model, ds, i)
-exdf = addexperiment(DataFrame(), e, ds, logsoft_model, i, n, 0.9*gap, name, pruning_method, merge(settings, (sampleno = r.j, filename = r.filename)), statlayer)
+exdf = addexperiment(DataFrame(), e, ds, logsoft_model, i, n, 0.9 * gap, name, pruning_method, merge(settings, (sampleno=r.j, filename=r.filename)), statlayer)
 BSON.@save "../../data/sims/cuckoo/stats/$(name)_$(pruning_method)_$(settings[:i]).bson" exdf

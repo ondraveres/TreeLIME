@@ -1,6 +1,6 @@
 #!/bin/bash
-
-for d in mutagenesis hepatitis deviceid; do
+#hepatitis deviceid mutagenesis
+for d in hepatitis deviceid; do
     for t in `ls ../../data/raw/${d}`; do 
         counter=0
         for c in `ls ../../data/raw/${d}/${t} | grep concept`; do 

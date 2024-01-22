@@ -4,10 +4,16 @@ Pkg.activate("..")
 using DataFrames, Statistics, Serialization, PrettyTables, Printf, HypothesisTests, CSV, CodecZlib, BSON
 
 srcdir = "../../data/sims/"
+misses = 0
+hits = 0
 
 function loadstats(p, filename)
-    !isfile(joinpath(srcdir, p, filename)) && return (DataFrame())
-    !isfile(joinpath(srcdir, p, "thetripleninemodel.bson")) && return (DataFrame())
+    if !isfile(joinpath(srcdir, p, filename))
+        @info "Loading $(joinpath(srcdir, p, filename)) failed"
+        global misses += 1
+        return (DataFrame())
+    end
+    global hits += 1
     BSON.load(joinpath(srcdir, p, filename))[:exdf]
 end
 
@@ -58,39 +64,48 @@ end
 ####
 #	Aggregate results to the final table
 ####
-
-df = mapreduce(vcat, ["deviceid", "hepatitis", "mutagenesis"]) do problem
+misses = 0
+hits = 0
+["deviceid", "hepatitis"]
+df = mapreduce(vcat, ["mutagenesis", "deviceid", "hepatitis"]) do problem
     mapreduce(vcat, readdir(joinpath(srcdir, problem))) do task
         mapreduce(vcat, readdir(joinpath(srcdir, problem, task))) do i
-            loadstats(joinpath(problem, task, i), "stats.bson")
+            loadstats(joinpath(problem, task, i), "stats_hundreditermodel17_1.bson")
         end
     end
 end
+misses
+hits
+
+hits / (hits + misses)
+
+df
+unique(df[!, :task])
 
 
 using BSON
 
-myyy = BSON.load(joinpath(srcdir, "mutagenesis/one_of_1_5trees/1", "2ninefivestats.bson"))[:exdf]
+# myyy = BSON.load(joinpath(srcdir, "mutagenesis/one_of_1_5trees/1", "2ninefivestats.bson"))[:exdf]
 
 
-myyy.pruning_method
-xdd = filter(r -> r.pruning_method == "LbyL_HAdd", myyy)[!, :excess_leaves]
-df = myyy
-df[!, :pruning_method] .= String.(df[!, :pruning_method])
-pms = true ? ["LbyL_HAdd", "LbyL_HArr", "LbyL_HArrft"] : ["Flat_HAdd", "Flat_HArr", "Flat_HArrft"]
-df = filter(r -> r.pruning_method ∈ pms, df)
-exportcase(df, pms, true)
-[!, :excess_leaves]
+# myyy.pruning_method
+# xdd = filter(r -> r.pruning_method == "LbyL_HAdd", myyy)[!, :excess_leaves]
+# df = myyy
+# df[!, :pruning_method] .= String.(df[!, :pruning_method])
+# pms = true ? ["LbyL_HAdd", "LbyL_HArr", "LbyL_HArrft"] : ["Flat_HAdd", "Flat_HArr", "Flat_HArrft"]
+# df = filter(r -> r.pruning_method ∈ pms, df)
+# exportcase(df, pms, true)
+# [!, :excess_leaves]
 
-df
+
 
 #####
 # Exporting data to Table 1
 #####
 
-df = open("../../data/table1.csv.gz") do io
-    CSV.read(GzipDecompressorStream(io), DataFrame)
-end
+# df = open("../../data/table1.csv.gz") do io
+#     CSV.read(GzipDecompressorStream(io), DataFrame)
+# end
 
 
 
@@ -102,13 +117,13 @@ function maketable(df)
         vcat(uninformative, heuristic)
     end
 end
-t1 = maketable(myyy)
-uninformative = filtercase(df, nothing, true)
-construct = df[!, :pruning_method]
-heuristic = mapreduce(r -> filtercase(df, r, true), vcat, ["GNN", "GNN2", "Grad", "Banz", "Rnd"])
-typeof(t1)
+t1 = maketable(df)
+# uninformative = filtercase(df, nothing, true)
+# construct = df[!, :pruning_method]
+# heuristic = mapreduce(r -> filtercase(df, r, true), vcat, ["GNN", "GNN2", "Grad", "Banz", "Rnd"])
+# typeof(t1)
 display(maketable(df))
-pretty_table(maketable(df), backend=:latex)
+pretty_table(maketable(df), backend=Val(:latex))
 
 #####
 # Exporting data to Table 2
