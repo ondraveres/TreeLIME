@@ -38,7 +38,7 @@ settings = parse_args(ARGS, _s; as_symbols=true)
 
 settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
-model_name = "hundreditermodel17_1.bson"
+model_name = "hundreditermodel22_1.bson"
 
 ###############################################################
 # start by loading all samples
@@ -55,8 +55,8 @@ println("resultsdir() = ", resultsdir())
 ###############################################################
 # create schema of the JSON
 ###############################################################
-
-if isfile(resultsdir(model_name))
+sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
+if !isfile(resultsdir(model_name))
     !isdir(resultsdir()) && mkpath(resultsdir())
     sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
     extractor = suggestextractor(sch)
@@ -77,7 +77,7 @@ if isfile(resultsdir(model_name))
         # b = Dict("" => d -> Chain(Dense(d, settings.k, relu), Dense(settings.k, 2)))
     )
     model = @set model.m = Chain(model.m, Dense(settings.k, 2))
-    for i in 1:10
+    for i in 1:2
 
 
 
@@ -122,18 +122,19 @@ if isfile(resultsdir(model_name))
         error("Failed to train a model")
     end
     #model = good_model
-    BSON.@save resultsdir(model_name) model extractor schema
+    BSON.@save resultsdir(model_name) model extractor sch
 end
 
 
 resultsdir()
 using Flux
-
+isfile(resultsdir(model_name))
 d = BSON.load(resultsdir(model_name))
 
 
 
-(model, extractor, sch) = d[:model], d[:extractor], d[:schema]
+
+(model, extractor, sch) = d[:model], d[:extractor], d[:sch]
 statlayer = StatsLayer()
 model = @set model.m = Chain(model.m, statlayer);
 soft_model = @set model.m = Chain(model.m, softmax);
@@ -170,7 +171,7 @@ extractor(samples[10111], store_input=true).metadata
 i = strain
 concept_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], concepts))
 sample_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], samples[labels.==2]))
-threshold_gap = 0.7#floor(0.9 * concept_gap, digits=2)
+threshold_gap = 0.5#floor(0.9 * concept_gap, digits=2)
 # correct = predict(soft_model, ds, [1, 2])
 # argmax(soft_model(ds[1]))
 # soft_model(ds)
@@ -181,7 +182,8 @@ threshold_gap = 0.7#floor(0.9 * concept_gap, digits=2)
 
 
 # ExplainMill.confidencegap(soft_model, ds, 2)
-ds = onlycorrect(ds, strain, threshold_gap)
+correct_ds = onlycorrect(ds, strain, 0.1)
+ds = correct_ds
 @info "minimum gap on concepts = $(concept_gap) on samples = $(sample_gap)"
 
 heuristic = [:Flat_HAdd, :Flat_HArr, :Flat_HArrft, :LbyL_HAdd, :LbyL_HArr, :LbyL_HArrft]
@@ -226,9 +228,60 @@ if !isfile(resultsdir("stats_" * model_name))
         BSON.@save resultsdir("stats_" * model_name) exdf
     end
 end
+### the real deal
+function iterate_over(mask, ds, extractor, sch)
+    # Iterate over the keys of the dictionaries
+    for key in keys(ds)
+        # Check if the value associated with the key is a dictionary
+        if ds[key] isa Dict
+            # Recursive case: iterate over this dictionary
+            @info "going deeper"
+            iterate_over(mask[key], ds[key], extractor[key], sch[key])
+        else
+            # Base case: perform perturbation on the leaf node
+            # ds[key] = perturb(ds[key])
+            @info "leaf"
+        end
+    end
+end
+
 ### the players
 ds[1]
+PrintTypesTersely.off()
+o = softmax(model(ds))
+eltype(o)
+typeof(true)
+mask = ExplainMill.create_mask_structure(ds[1], d -> ExplainMill.ParticipationTracker(SimpleMask(ones(Bool, d))))
+dump(mask)
 model(ds[1])
+sch[:lumo]
+ds[1][:lumo]
+extractor[:lumo]
+dump(mask[:lumo])
+
+typeof(ds[1])
+iterate_over(mask, ds[1], extractor, sch)
+typeof(sch)
+
+
+mk = ExplainMill.stats(ExplainMill.StochasticExplainer(), ds[1], model)
+o = softmax(model(ds[1]))[:]
+τ = 0.9 * maximum(o)
+class = argmax(softmax(model(ds[1]))[:])
+f = () -> softmax(model(ds[1][mk]))[class] - τ
+ExplainMill.levelbylevelsearch!(f, mask)
+
+dump(ds[1][mask])
+
+nnodes(ds[1])
+values(ds[1])
+ds[1]
+dump(sch)
+extractor
+
+ds[mask]
+
+ExplainMill.
 ds
 
 
@@ -236,8 +289,10 @@ ds
 log.(soft_model(ds[1]))
 logsoft_model(ds[1])
 concepts[1]
-ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, pruning_method=:Flat_Gadd)
+ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], model, pruning_method=:Flat_Gadd)
 logical = ExplainMill.e2boolean(ds[1], ms, extractor)
+
+
 logical
 PrintTypesTersely.off()
 repr(logical)
