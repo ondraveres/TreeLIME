@@ -285,100 +285,60 @@ ExplainMill.levelbylevelsearch!(f, mask)
 logical = ExplainMill.e2boolean(ds[1], mask, extractor)
 
 
-typeof(Mill.children(mysample))
+# typeof(Mill.children(mysample))
 
-Mill.children(sch)
+# Mill.children(sch)
 
-for (name, value) in pairs(Mill.children(ds))
-    println("Name: ", name)
-    println("Value: ", value)
-    @info Mill.NodeType(value)
-end
+# for (name, value) in pairs(Mill.children(ds))
+#     println("Name: ", name)
+#     println("Value: ", value)
+#     @info Mill.NodeType(value)
+# end
 
-extractor[:atoms]
+# extractor[:atoms]
 
-Mill.children(extractor[:atoms].item)
+# Mill.children(extractor[:atoms].item)
 
-HierarchicalUtils.nleafs(mysample)
+# HierarchicalUtils.nleafs(mysample)
 
-NodeIterator(mysample) |> collect
+# NodeIterator(mysample) |> collect
 
-LeafIterator(mysample, mask) |> collect
-LeafIterator(mask) |> collect
+# LeafIterator(mysample, mask) |> collect
+# LeafIterator(mask) |> collect
 
+
+global_data_node = nothing
+global_mask_node = nothing
+global_schema_node = nothing
+global_extractor_node = nothing
 
 leafmap!(mysample, mask, sch, extractor; complete=false, order=LevelOrder()) do (data_node, mask_node, schema_node, extractor_node)
-    # @show data_node
-    @show mask_node.mask
-    @show typeof(mask_node.mask)
-    # @show schema_node
-    # @show extractor_node
+    data_node.data
+    data_node.metadata
+    mask_node.mask.m
+    schema_node.counts
+    global global_data_node = data_node
+    global global_mask_node = mask_node
+    global global_schema_node = schema_node
+    global global_extractor_node = extractor_node
+
+    global_data_node.data
+    global_mask_node.mask.m.x
+    for i in 1:length(global_mask_node.mask.m.x)
+
+        @info global_mask_node.mask.m.x[i]
+    end
+    # extractor_node.n
+    # extractor_node.keyvalemap
+    # extractor_node.uniontypes
 end
 
 
+flat_view = ExplainMill.FlatView(mask)
+mask_bool_vector = [flat_view[i] for i in 1:length(flat_view.itemmap)]
 
-# dump(ds[1][mask])
-
-# nnodes(ds[1])
-# values(ds[1])
-# ds[1]
-# dump(sch)
-# extractor
-
-# ds[mask]
-
-# ExplainMill.
-# ds
+@show global_data_node.data
 
 
-
-# log.(soft_model(ds[1]))
-# logsoft_model(ds[1])
-# concepts[1]
-# ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], model, pruning_method=:Flat_Gadd)
-# logical = ExplainMill.e2boolean(ds[1], ms, extractor)
-
-
-# logical
-# PrintTypesTersely.off()
-# repr(logical)
-# repr(concepts[1])
-# concepts[1]
-# ce = map(c -> jsondiff(c, logical), concepts)
-# ec = map(c -> jsondiff(logical, c), concepts)
-# logical
-# ds[20][:lumo]
-# concepts[1]
-# logical
-# ec[1]
-# ce[1]
-# ds[1][ms]
-# concepts[1]
-# gap = ExplainMill.confidencegap(soft_model, ds[1][ms], 2)
-# fv = ExplainMill.FlatView(ms)
-# logical = ExplainMill.e2boolean(ds[1], ms, extractor)
-# ce = map(c -> jsondiff(c, logical), concepts)
-# ec = map(c -> jsondiff(logical, c), concepts)
-
-# ce = jsondiff(concepts[1], logical)
-# ec = jsondiff(logical, concepts[1])
-
-# ce = jsondiff(concepts[1], logical)
-# ec = jsondiff(logical, concepts[1])
-
-# c = concepts[1]
-# logical
-# c
-# ec
-# ce
-# ds[1]
-# logical = ExplainMill.e2boolean(ds[1], ms, extractor)
-# logical
-# logical
-# excess_nodes = nnodes(ec)
-# mynnodes = nnodes(logical)
-# println("done")
-# println("resultsdir() = ", resultsdir())
-
-
+global_mask_node.mask.m.x
 
