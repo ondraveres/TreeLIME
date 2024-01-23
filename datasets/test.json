@@ -1,0 +1,697 @@
+{
+    "lumo": -1.492,
+    "inda": 0.0,
+    "logp": 2.29,
+    "mutagenic": 1.0,
+    "ind1": 1,
+    "atoms": [
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "h",
+                    "bond_type": 7,
+                    "charge": 0.011,
+                    "atom_type": 22
+                },
+                {
+                    "element": "h",
+                    "bond_type": 7,
+                    "charge": 0.825,
+                    "atom_type": 27
+                },
+                {
+                    "element": "n",
+                    "bond_type": 7,
+                    "charge": 0.009,
+                    "atom_type": 22
+                }
+            ],
+            "charge": 0.146,
+            "atom_type": 22
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.084,
+                    "atom_type": 27
+                },
+                {
+                    "element": "c",
+                    "bond_type": 2,
+                    "charge": 0.138,
+                    "atom_type": 22
+                },
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": -0.089,
+                    "atom_type": 28
+                }
+            ],
+            "charge": -0.115,
+            "atom_type": 195
+        },
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 2,
+                    "charge": -0.384,
+                    "atom_type": 36
+                }
+            ],
+            "charge": 0.006,
+            "atom_type": 38
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "n",
+                    "bond_type": 7,
+                    "charge": -0.118,
+                    "atom_type": 22
+                }
+            ],
+            "charge": -0.119,
+            "atom_type": 40
+        },
+        {
+            "element": "o",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.118,
+                    "atom_type": 3
+                }
+            ],
+            "charge": -0.382,
+            "atom_type": 40
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.191,
+                    "atom_type": 3
+                },
+                {
+                    "element": "h",
+                    "bond_type": 7,
+                    "charge": -0.128,
+                    "atom_type": 22
+                },
+                {
+                    "element": "h",
+                    "bond_type": 7,
+                    "charge": -0.004,
+                    "atom_type": 3
+                }
+            ],
+            "charge": -0.391,
+            "atom_type": 22
+        },
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": 0.008,
+                    "atom_type": 22
+                },
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": 0.017,
+                    "atom_type": 40
+                },
+                {
+                    "element": "c",
+                    "bond_type": 2,
+                    "charge": -0.142,
+                    "atom_type": 10
+                }
+            ],
+            "charge": 0.108,
+            "atom_type": 10
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "h",
+                    "bond_type": 1,
+                    "charge": -0.123,
+                    "atom_type": 27
+                },
+                {
+                    "element": "h",
+                    "bond_type": 7,
+                    "charge": 0.014,
+                    "atom_type": 3
+                }
+            ],
+            "charge": -0.118,
+            "atom_type": 3
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": -0.115,
+                    "atom_type": 3
+                }
+            ],
+            "charge": -0.067,
+            "atom_type": 3
+        },
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": -0.113,
+                    "atom_type": 22
+                }
+            ],
+            "charge": 0.134,
+            "atom_type": 22
+        },
+        {
+            "element": "o",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.125,
+                    "atom_type": 22
+                },
+                {
+                    "element": "h",
+                    "bond_type": 7,
+                    "charge": -0.377,
+                    "atom_type": 22
+                },
+                {
+                    "element": "h",
+                    "bond_type": 7,
+                    "charge": -0.122,
+                    "atom_type": 38
+                }
+            ],
+            "charge": 0.182,
+            "atom_type": 38
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": 0.812,
+                    "atom_type": 22
+                },
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": -0.115,
+                    "atom_type": 22
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.118,
+                    "atom_type": 22
+                }
+            ],
+            "charge": -0.133,
+            "atom_type": 38
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": -0.12,
+                    "atom_type": 22
+                },
+                {
+                    "element": "o",
+                    "bond_type": 1,
+                    "charge": -0.122,
+                    "atom_type": 3
+                },
+                {
+                    "element": "h",
+                    "bond_type": 1,
+                    "charge": -0.121,
+                    "atom_type": 22
+                }
+            ],
+            "charge": -0.124,
+            "atom_type": 3
+        },
+        {
+            "element": "o",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": 0.145,
+                    "atom_type": 22
+                },
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": 0.814,
+                    "atom_type": 22
+                },
+                {
+                    "element": "c",
+                    "bond_type": 2,
+                    "charge": -0.418,
+                    "atom_type": 38
+                }
+            ],
+            "charge": 0.012,
+            "atom_type": 14
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "h",
+                    "bond_type": 2,
+                    "charge": 0.152,
+                    "atom_type": 3
+                }
+            ],
+            "charge": -0.382,
+            "atom_type": 3
+        },
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.725,
+                    "atom_type": 93
+                },
+                {
+                    "element": "n",
+                    "bond_type": 1,
+                    "charge": -0.083,
+                    "atom_type": 40
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.115,
+                    "atom_type": 22
+                }
+            ],
+            "charge": 0.818,
+            "atom_type": 3
+        },
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.115,
+                    "atom_type": 22
+                }
+            ],
+            "charge": -0.389,
+            "atom_type": 40
+        },
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.389,
+                    "atom_type": 22
+                },
+                {
+                    "element": "o",
+                    "bond_type": 1,
+                    "charge": -0.123,
+                    "atom_type": 27
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.384,
+                    "atom_type": 22
+                }
+            ],
+            "charge": 0.008,
+            "atom_type": 3
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "h",
+                    "bond_type": 2,
+                    "charge": -0.099,
+                    "atom_type": 38
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": 0.012,
+                    "atom_type": 3
+                },
+                {
+                    "element": "c",
+                    "bond_type": 2,
+                    "charge": -0.089,
+                    "atom_type": 22
+                }
+            ],
+            "charge": 0.002,
+            "atom_type": 3
+        },
+        {
+            "element": "n",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": -0.393,
+                    "atom_type": 22
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.097,
+                    "atom_type": 22
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": 0.188,
+                    "atom_type": 3
+                }
+            ],
+            "charge": -0.122,
+            "atom_type": 22
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "n",
+                    "bond_type": 7,
+                    "charge": -0.135,
+                    "atom_type": 195
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.116,
+                    "atom_type": 3
+                },
+                {
+                    "element": "h",
+                    "bond_type": 7,
+                    "charge": 0.061,
+                    "atom_type": 22
+                }
+            ],
+            "charge": -0.125,
+            "atom_type": 3
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.114,
+                    "atom_type": 27
+                },
+                {
+                    "element": "c",
+                    "bond_type": 2,
+                    "charge": 0.142,
+                    "atom_type": 29
+                },
+                {
+                    "element": "c",
+                    "bond_type": 2,
+                    "charge": -0.173,
+                    "atom_type": 22
+                }
+            ],
+            "charge": -0.113,
+            "atom_type": 3
+        },
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "h",
+                    "bond_type": 1,
+                    "charge": -0.389,
+                    "atom_type": 40
+                },
+                {
+                    "element": "h",
+                    "bond_type": 7,
+                    "charge": 0.31,
+                    "atom_type": 22
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.174,
+                    "atom_type": 22
+                }
+            ],
+            "charge": -0.117,
+            "atom_type": 22
+        },
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "o",
+                    "bond_type": 2,
+                    "charge": -0.368,
+                    "atom_type": 22
+                }
+            ],
+            "charge": -0.126,
+            "atom_type": 27
+        },
+        {
+            "element": "o",
+            "bonds": [
+                {
+                    "element": "h",
+                    "bond_type": 7,
+                    "charge": -0.113,
+                    "atom_type": 16
+                }
+            ],
+            "charge": -0.115,
+            "atom_type": 38
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "h",
+                    "bond_type": 7,
+                    "charge": -0.12,
+                    "atom_type": 26
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.115,
+                    "atom_type": 38
+                },
+                {
+                    "element": "h",
+                    "bond_type": 7,
+                    "charge": 0.059,
+                    "atom_type": 22
+                }
+            ],
+            "charge": -0.067,
+            "atom_type": 22
+        },
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 2,
+                    "charge": -0.12,
+                    "atom_type": 22
+                }
+            ],
+            "charge": -0.115,
+            "atom_type": 22
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": -0.389,
+                    "atom_type": 29
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.121,
+                    "atom_type": 27
+                },
+                {
+                    "element": "o",
+                    "bond_type": 2,
+                    "charge": -0.115,
+                    "atom_type": 22
+                }
+            ],
+            "charge": 0.201,
+            "atom_type": 3
+        },
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": 0.706,
+                    "atom_type": 22
+                }
+            ],
+            "charge": 0.108,
+            "atom_type": 40
+        },
+        {
+            "element": "o",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": 0.112,
+                    "atom_type": 27
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.118,
+                    "atom_type": 38
+                },
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": 0.014,
+                    "atom_type": 3
+                }
+            ],
+            "charge": 0.135,
+            "atom_type": 34
+        },
+        {
+            "element": "o",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 2,
+                    "charge": -0.111,
+                    "atom_type": 22
+                }
+            ],
+            "charge": -0.128,
+            "atom_type": 10
+        },
+        {
+            "element": "c",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": 0.002,
+                    "atom_type": 38
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.124,
+                    "atom_type": 22
+                },
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": -0.128,
+                    "atom_type": 3
+                }
+            ],
+            "charge": -0.118,
+            "atom_type": 22
+        },
+        {
+            "element": "o",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": -0.39,
+                    "atom_type": 3
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": 0.059,
+                    "atom_type": 3
+                },
+                {
+                    "element": "o",
+                    "bond_type": 1,
+                    "charge": 0.516,
+                    "atom_type": 22
+                }
+            ],
+            "charge": 0.832,
+            "atom_type": 22
+        },
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": -0.115,
+                    "atom_type": 22
+                }
+            ],
+            "charge": -0.549,
+            "atom_type": 40
+        }
+    ]
+}
