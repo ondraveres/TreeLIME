@@ -1,5 +1,5 @@
 # for ((i=1;i<=20;i+=1)); do  for d in  one_of_1_2trees  one_of_1_5trees  one_of_1_paths  one_of_2_5trees  one_of_2_paths  one_of_5_paths ; do  julia -p 24 artificial.jl --dataset $d --incarnation $i ; done ; done
-
+using Revise
 using Pkg;
 cd("/home/veresond/ExplainMill.jl/myscripts/datasets");
 Pkg.activate("..");
@@ -235,7 +235,9 @@ if false
 end
 
 
-using HierarchicalUtils
+
+
+
 ### the real deal
 function iterate_over(mask, ds, extractor, sch)
     # Iterate over the keys of the dictionaries
@@ -281,118 +283,154 @@ ExplainMill.levelbylevelsearch!(f, mask)
 
 logical = ExplainMill.e2boolean(ds[1], mask, extractor)
 
+N = 100  # Number of copies
+copies = Array{Tuple{typeof(mysample),typeof(mask)},1}(undef, N)
 
-# typeof(Mill.children(mysample))
+for i in 1:N
 
-# Mill.children(sch)
-
-# for (name, value) in pairs(Mill.children(ds))
-#     println("Name: ", name)
-#     println("Value: ", value)
-#     @info Mill.NodeType(value)
-# end
-
-# extractor[:atoms]
-
-# Mill.children(extractor[:atoms].item)
-
-# HierarchicalUtils.nleafs(mysample)
-
-# NodeIterator(mysample) |> collect
-
-# LeafIterator(mysample, mask) |> collect
-# LeafIterator(mask) |> collect
+    mysample_copy = deepcopy(mysample)
+    mask_copy = deepcopy(mask)
+    sch_copy = deepcopy(sch)
+    extractor_copy = deepcopy(extractor)
 
 
-global_data_node = nothing
-global_mask_node = nothing
-global_schema_node = nothing
-global_extractor_node = nothing
+    leafmap!(mysample_copy, mask_copy, sch_copy, extractor_copy; complete=false, order=LevelOrder()) do (data_node, mask_node, schema_node, extractor_node)
 
-mysample_copy = deepcopy(mysample)
-mask_copy = deepcopy(mask)
-sch_copy = deepcopy(sch)
-extractor_copy = deepcopy(extractor)
+        # @info "node start"
+        # @info data_node
+        # @info mask_node
+        # @info schema_node
+        # @info extractor_node
+        # @info "node end"
 
-leafmap!(mysample_copy, mask_copy, sch_copy, extractor_copy; complete=false, order=LevelOrder()) do (data_node, mask_node, schema_node, extractor_node)
-    data_node.data
-    data_node.metadata
-    mask_node.mask.m
-    schema_node.counts
-
-    # @info "node start"
-    # @info data_node
-    # @info mask_node
-    # @info schema_node
-    # @info extractor_node
-    # @info "node end"
-
-    if extractor_node isa ExtractCategorical
+        if extractor_node isa ExtractCategorical
 
 
-        total = sum(values(schema_node.counts))
-        normalized_probs = [v / total for v in values(schema_node.counts)]
-        w = Weights(normalized_probs)
-        vals = collect(keys(schema_node.counts))
-        # random_key = rand(collect(keys(schema_node.counts)), w)
-        random_key = sample(vals, w)
+            total = sum(values(schema_node.counts))
+            normalized_probs = [v / total for v in values(schema_node.counts)]
+            n = length(normalized_probs)  # Get the number of elements
+            w = Weights(ones(n))
+            # w = Weights(normalized_probs)
+            vals = collect(keys(schema_node.counts))
+            # random_key = rand(collect(keys(schema_node.counts)), w)
+            random_key = sample(vals, w)
 
 
-        for i in 1:length(mask_node.mask.m.x)
-            if rand() < 0.5
-                # This block has a 50% chance of being executed
-                println("Pertrube the value")
-                random_key = sample(vals, w)
-                @info "random key" random_key
-                extracted_random_key = extractor_node.keyvalemap[random_key]
-                @info "extracted key" extracted_random_key
-                @info typeof(extracted_random_key)
-                @info extractor_node.n
-                mask_node.mask.m.x[i] = true
-                new_hot_vector = MaybeHotVector(extracted_random_key, extractor_node.n)
-                new_hot_matrix = MaybeHotMatrix(new_hot_vector)
-                new_data = hcat(data_node.data[:, 1:i-1], new_hot_matrix, data_node.data[:, i+1:end])
-                @info data_node
-                data_node = ArrayNode(new_data, data_node.metadata)
+            for i in 1:length(mask_node.mask.m.x)
+                if rand() > 0.7
+
+                    extracted_random_key = extractor_node.keyvalemap[sample(vals, w)]
+                    mask_node.mask.m.x[i] = true
+                    original_hot_vector = data_node.data[:, i]
+                    new_hot_vector = MaybeHotVector(extracted_random_key, extractor_node.n)
+                    while original_hot_vector == new_hot_vector
+                        extracted_random_key = extractor_node.keyvalemap[sample(vals, w)]
+                        new_hot_vector = MaybeHotVector(extracted_random_key, extractor_node.n)
+                    end
+                    # @info "original key" original_hot_vector
+                    # @info "extracted key" new_hot_vector
+                    if original_hot_vector == new_hot_vector
+                        @info "same"
+                    else
+                        @info "different"
+                    end
+                    new_hot_matrix = MaybeHotMatrix(new_hot_vector)
+                    new_data = hcat(data_node.data[:, 1:i-1], new_hot_matrix, data_node.data[:, i+1:end])
+                    # data_node = ArrayNode(new_data, data_node.metadata)
+                    data_node.data = new_data
+                end
+
+
+                # @info data_node
+                # # @info schema_node.counts
+                # @info data_node.data[:, i]
+                # @info data_node.metadata[i]
+                # @info mask_node.mask.m.x[i]
             end
-
-
-            # @info data_node
-            # # @info schema_node.counts
-            # @info data_node.data[:, i]
-            # @info data_node.metadata[i]
-            # @info mask_node.mask.m.x[i]
+        elseif extractor_node isa ExtractScalar
+            @info "scalar"
+        else
+            @error "unknown extractor type"
         end
-    elseif extractor_node isa ExtractScalar
-        @info "scalar"
-    else
-        @error "unknown extractor type"
+
+        global global_data_node = data_node
+        global global_mask_node = mask_node
+        global global_schema_node = schema_node
+        global global_extractor_node = extractor_node
+
+        global_data_node.data
+        global_mask_node.mask.m.x
     end
+    copies[i] = (mysample_copy, mask_copy)
+end
 
-    global global_data_node = data_node
-    global global_mask_node = mask_node
-    global global_schema_node = schema_node
-    global global_extractor_node = extractor_node
-
-    global_data_node.data
-    global_mask_node.mask.m.x
-    # @info global_data_node
-
-    # extractor_node.n
-    # extractor_node.keyvalemap
-    # extractor_node.uniontypes
+for i in 1:N
+    @info argmax(model(copies[i][1]))[1]
 end
 
 
 flat_view = ExplainMill.FlatView(mask)
 new_flat_view = ExplainMill.FlatView(mask_copy)
+
 mask_bool_vector = [flat_view[i] for i in 1:length(flat_view.itemmap)]
 new_mask_bool_vector = [new_flat_view[i] for i in 1:length(new_flat_view.itemmap)]
 
 mean(mask_bool_vector)
 mean(new_mask_bool_vector)
-global_data_node.data[1, :]
 
+
+model(mysample)
+model(mysample_copy)
+
+mysample[:lumo]
+mysample_copy[:lumo]
+
+mysample_copy
+mysample
 
 global_mask_node.mask.m.x
 
+
+
+
+# ret = treemap(mysample_copy, mask_copy, extractor_copy, sch_copy; complete=false) do n, ch
+#     (data_node, mask_node, extractor_node, schema_node) = n
+#     if (isleaf(data_node))
+#         data_node.data
+#         data_node.metadata
+#         schema_node.counts
+
+#         if extractor_node isa ExtractCategorical
+
+
+#             total = sum(values(schema_node.counts))
+#             normalized_probs = [v / total for v in values(schema_node.counts)]
+#             w = Weights(normalized_probs)
+#             vals = collect(keys(schema_node.counts))
+
+#             new_data = []
+#             for i in 1:length(mask_node.mask.m.x)
+#                 if rand() < 0.0
+#                     random_key = sample(vals, w)
+#                     extracted_random_key = extractor_node.keyvalemap[random_key]
+#                     mask_node.mask.m.x[i] = true
+#                     new_hot_vector = MaybeHotVector(extracted_random_key, extractor_node.n)
+#                     new_hot_matrix = MaybeHotMatrix(new_hot_vector)
+#                     push!(new_data, new_hot_matrix)
+#                 else
+#                     push!(new_data, data_node.data[:, i])
+#                 end
+#             end
+#             concatenated_data = hcat(new_data...)
+#             new_array_node = ArrayNode(concatenated_data, data_node.metadata)
+#             @info "origo data" data_node.data
+#             @info "změněný data" new_array_node.data
+#             return (new_array_node, mask_node, extractor_node, schema_node)
+#         elseif extractor_node isa ExtractScalar
+#             @info "scalar"
+#         else
+#             @error "unknown extractor type"
+#         end
+#     end
+#     return (data_node, mask_node, extractor_node, schema_node)
+# end

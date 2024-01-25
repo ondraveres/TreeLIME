@@ -2,7 +2,7 @@
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "d68096a0d206674e70645fbf4d01f13d82611779"
+project_hash = "14069c10aa3970e442f3976eb519efb336e4a1cc"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -511,7 +511,7 @@ uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
 version = "2.5.0+0"
 
 [[deps.ExplainMill]]
-deps = ["ChainRulesCore", "Clustering", "DataStructures", "Distances", "Duff", "Flux", "HierarchicalUtils", "JSON", "JsonGrinder", "Mill", "Random", "Setfield", "SparseArrays", "StatsBase"]
+deps = ["ChainRulesCore", "Clustering", "DataStructures", "Distances", "Duff", "Flux", "HierarchicalUtils", "JSON", "JsonGrinder", "Mill", "Random", "Revise", "Setfield", "SparseArrays", "StatsBase"]
 path = "../../ExplainMill.jl"
 uuid = "a2c437b0-bf6b-41a1-8a62-162a814afa99"
 version = "0.0.1"
@@ -747,9 +747,9 @@ version = "2.8.1+1"
 
 [[deps.HierarchicalUtils]]
 deps = ["DataStructures", "OrderedCollections"]
-git-tree-sha1 = "e296de8ba6aabe14dcb26567e00f174c512a1ab9"
+path = "../../HierarchicalUtils.jl"
 uuid = "f9ccea15-0695-44b9-8113-df7c26ae4fa9"
-version = "2.1.5"
+version = "2.1.6"
 
 [[deps.HttpCommon]]
 deps = ["Dates", "Nullables", "Test", "URIParser"]
@@ -1157,7 +1157,7 @@ version = "0.1.4"
 
 [[deps.Mill]]
 deps = ["ChainRulesCore", "Combinatorics", "DataFrames", "DataStructures", "FiniteDifferences", "Flux", "HierarchicalUtils", "LinearAlgebra", "MLUtils", "MacroTools", "OneHotArrays", "PooledArrays", "Preferences", "Setfield", "SparseArrays", "Statistics", "Test"]
-git-tree-sha1 = "83b829e5057d7b1a1768d84a236dd4597927fd77"
+path = "../../Mill.jl"
 uuid = "1d0525e4-8992-11e8-313c-e310e1f6ddea"
 version = "2.10.0"
 
