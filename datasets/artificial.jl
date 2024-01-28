@@ -235,57 +235,67 @@ if false
 end
 
 
-
-
-
-### the real deal
-function iterate_over(mask, ds, extractor, sch)
-    # Iterate over the keys of the dictionaries
-    for key in keys(ds)
-        # Check if the value associated with the key is a dictionary
-        if ds[key] isa Dict
-            # Recursive case: iterate over this dictionary
-            @info "going deeper"
-            iterate_over(mask[key], ds[key], extractor[key], sch[key])
-        else
-            # Base case: perform perturbation on the leaf node
-            # ds[key] = perturb(ds[key])
-            @info "leaf"
-        end
-    end
-end
+using HierarchicalUtils
 
 ### the players
 PrintTypesTersely.off()
 
 mysample = ds[1]
 
-mask = ExplainMill.create_mask_structure(mysample, d -> ExplainMill.ParticipationTracker(SimpleMask(ones(Bool, d))))
 
-sch[:lumo]
-mysample[:lumo]
-extractor[:lumo]
-mask[:lumo]
+mask = ExplainMill.create_mask_structure(mysample, d -> SimpleMask(fill(true, d)))
+mysample_copy = deepcopy(mysample)
+mask_copy = deepcopy(mask)
+sch_copy = deepcopy(sch)
+extractor_copy = deepcopy(extractor)
 
-printtree(mysample)
+children(mysample_copy)
+children(mysample)
+children(mask)
+mysample_copy[:atoms].bags
+mysample_copy[:atoms] isa ProductNode
 
-typeof(mysample)
+function my_recursion(data_node, mask_node)
 
-iterate_over(mask, ds[1], extractor, sch)
+    @info children(data_node)
 
+    if data_node isa ProductNode
+        children_names = []
+        children_nodes = []
+        mask_nodes = []
+        for (
+            (children_name, children_node),
+            (mask_children_name, mask_children_node)
+        ) in zip(
+            pairs(children(data_node)),
+            pairs(children(mask_node))
+        )
+            push!(children_names, children_name)
+            (data_children_node, mask_children_node) = my_recursion(children_node, mask_children_node)
+            push!(children_nodes, data_children_node)
+            push!(children_nodes, mask_children_node)
+        end
+        nt_data = NamedTuple{Tuple(children_names)}(children_nodes)
+        nt_mask = NamedTuple{Tuple(children_names)}(children(mask_node))
 
-mk = ExplainMill.stats(ExplainMill.StochasticExplainer(), ds[1], model)
-o = softmax(model(ds[1]))[:]
-τ = 0.9 * maximum(o)
-class = argmax(softmax(model(ds[1]))[:])
-f = () -> softmax(model(ds[1][mk]))[class] - τ
-ExplainMill.levelbylevelsearch!(f, mask)
+        return ProductNode(nt_data)
+    end
+    if data_node isa BagNode
+        return BagNode(my_recursion(Mill.data(data_node)), data_node.bags)
+    end
+    if data_node isa ArrayNode
+        return ArrayNode(Mill.data(data_node), data_node.metadata)
+    end
+end
+my_recursion(mysample_copy)
 
-logical = ExplainMill.e2boolean(ds[1], mask, extractor)
+mysample_copy == my_recursion(mysample_copy)
 
-N = 100  # Number of copies
+N = 1  # Number of copies
 copies = Array{Tuple{typeof(mysample),typeof(mask)},1}(undef, N)
-
+my_data_node = nothing
+my_mask_node = nothing
+my_extractor_node = nothing
 for i in 1:N
 
     mysample_copy = deepcopy(mysample)
@@ -293,81 +303,68 @@ for i in 1:N
     sch_copy = deepcopy(sch)
     extractor_copy = deepcopy(extractor)
 
-
     leafmap!(mysample_copy, mask_copy, sch_copy, extractor_copy; complete=false, order=LevelOrder()) do (data_node, mask_node, schema_node, extractor_node)
-
-        # @info "node start"
-        # @info data_node
-        # @info mask_node
-        # @info schema_node
-        # @info extractor_node
-        # @info "node end"
+        total = sum(values(schema_node.counts))
+        normalized_probs = [v / total for v in values(schema_node.counts)]
+        n = length(normalized_probs)  # Get the number of elements
+        w = Weights(ones(n))
+        #w = Weights(normalized_probs)
+        vals = collect(keys(schema_node.counts))
 
         if extractor_node isa ExtractCategorical
-
-
-            total = sum(values(schema_node.counts))
-            normalized_probs = [v / total for v in values(schema_node.counts)]
-            n = length(normalized_probs)  # Get the number of elements
-            w = Weights(ones(n))
-            # w = Weights(normalized_probs)
-            vals = collect(keys(schema_node.counts))
-            # random_key = rand(collect(keys(schema_node.counts)), w)
-            random_key = sample(vals, w)
-
-
-            for i in 1:length(mask_node.mask.m.x)
-                if rand() > 0.7
-
+            for i in 1:length(mask_node.mask.x)
+                if rand() > 0.5
                     extracted_random_key = extractor_node.keyvalemap[sample(vals, w)]
-                    mask_node.mask.m.x[i] = true
+                    mask_node.mask.x[i] = true
                     original_hot_vector = data_node.data[:, i]
                     new_hot_vector = MaybeHotVector(extracted_random_key, extractor_node.n)
                     while original_hot_vector == new_hot_vector
                         extracted_random_key = extractor_node.keyvalemap[sample(vals, w)]
                         new_hot_vector = MaybeHotVector(extracted_random_key, extractor_node.n)
                     end
-                    # @info "original key" original_hot_vector
-                    # @info "extracted key" new_hot_vector
-                    if original_hot_vector == new_hot_vector
-                        @info "same"
-                    else
-                        @info "different"
-                    end
                     new_hot_matrix = MaybeHotMatrix(new_hot_vector)
                     new_data = hcat(data_node.data[:, 1:i-1], new_hot_matrix, data_node.data[:, i+1:end])
-                    # data_node = ArrayNode(new_data, data_node.metadata)
                     data_node.data = new_data
                 end
-
-
-                # @info data_node
-                # # @info schema_node.counts
-                # @info data_node.data[:, i]
-                # @info data_node.metadata[i]
-                # @info mask_node.mask.m.x[i]
             end
+            global my_data_node = data_node
+            global my_mask_node = mask_node
+            global my_extractor_node = extractor_node
+
         elseif extractor_node isa ExtractScalar
-            @info "scalar"
+
+            if rand() > 0.0
+                extracted_random_key = extractor_node(sample(vals, w))
+                @info "start"
+                @info extracted_random_key
+                @info extractor_node
+                @info data_node.data
+                @info mask_node
+                @info mask_node.cols
+                @info mask_node.rows
+                @info length(mask_node.mask.x)
+                # data_node.data = extracted_random_key.data
+                # mask_node.mask.m.x[1] = true
+
+            end
         else
             @error "unknown extractor type"
         end
-
-        global global_data_node = data_node
-        global global_mask_node = mask_node
-        global global_schema_node = schema_node
-        global global_extractor_node = extractor_node
-
-        global_data_node.data
-        global_mask_node.mask.m.x
     end
     copies[i] = (mysample_copy, mask_copy)
 end
 
-for i in 1:N
-    @info argmax(model(copies[i][1]))[1]
-end
 
+my_mask.mask
+my_sch
+mask_labels = []
+model(mysample_copy)
+mysample
+copies[1][1]
+for i in 1:N
+    push!(mask_labels, argmax(model(copies[i][1]))[1])
+end
+mean(mask_labels)
 
 flat_view = ExplainMill.FlatView(mask)
 new_flat_view = ExplainMill.FlatView(mask_copy)
