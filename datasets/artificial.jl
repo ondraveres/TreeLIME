@@ -257,8 +257,6 @@ mysample_copy[:atoms] isa ProductNode
 
 function my_recursion(data_node, mask_node)
 
-    @info children(data_node)
-
     if data_node isa ProductNode
         children_names = []
         children_nodes = []
@@ -270,27 +268,40 @@ function my_recursion(data_node, mask_node)
             pairs(children(data_node)),
             pairs(children(mask_node))
         )
+            @info "children_name" children_name
             push!(children_names, children_name)
             (data_children_node, mask_children_node) = my_recursion(children_node, mask_children_node)
             push!(children_nodes, data_children_node)
-            push!(children_nodes, mask_children_node)
+            push!(mask_nodes, mask_children_node)
         end
         nt_data = NamedTuple{Tuple(children_names)}(children_nodes)
         nt_mask = NamedTuple{Tuple(children_names)}(children(mask_node))
 
-        return ProductNode(nt_data)
+        return ProductNode(nt_data), ExplainMill.ProductMask(nt_mask)
     end
     if data_node isa BagNode
-        return BagNode(my_recursion(Mill.data(data_node)), data_node.bags)
+        child_node = Mill.data(data_node)
+        (modified_data_child_node, mask_child_node) = my_recursion(child_node, mask_node)
+        return BagNode(modified_data_child_node, data_node.bags, data_node.metadata), mask_child_node
     end
     if data_node isa ArrayNode
-        return ArrayNode(Mill.data(data_node), data_node.metadata)
+        return ArrayNode(Mill.data(data_node), data_node.metadata), mask_node
     end
 end
-my_recursion(mysample_copy)
 
+Mill.data(mysample_copy[:atoms])
+
+my_recursion(Mill.data(mysample_copy[:atoms]), mask_copy[:atoms])
+mysample_copy[:atoms].bags
+e = ExtractDict(Dict(:a => ExtractScalar(Float32, 2, 3),
+    :b => ExtractCategorical(1:5)))
+sc = ExtractArray(e([Dict("a" => 1, "b" => 1), Dict("a" => 1, "b" => 1), Dict("a" => 1, "b" => 1)]))
+typeof(sc)
+(s, m) = my_recursion(mysample_copy, mask_copy)
+s == mysample_copy
+m == mask_copy
 mysample_copy == my_recursion(mysample_copy)
-
+mask_copy
 N = 1  # Number of copies
 copies = Array{Tuple{typeof(mysample),typeof(mask)},1}(undef, N)
 my_data_node = nothing
