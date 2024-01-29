@@ -267,7 +267,6 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
             pairs(children(data_node)),
             pairs(children(mask_node))
         )
-            @info "children_name" data_ch_name
             push!(children_names, data_ch_name)
             (modified_child_data, modified_child_mask) = my_recursion(data_ch_node, mask_ch_node, extractor_node[data_ch_name], schema_node[data_ch_name])
             push!(modified_data_ch_nodes, modified_child_data)
@@ -285,15 +284,54 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
         return BagNode(modified_data_child_node, data_node.bags, data_node.metadata), ExplainMill.BagMask(modified_child_mask, mask_node.bags, mask_node.mask)
     end
     if data_node isa ArrayNode
+        total = sum(values(schema_node.counts))
+        normalized_probs = [v / total for v in values(schema_node.counts)]
+        n = length(normalized_probs)  # Get the number of elements
+        w = Weights(ones(n))
+        vals = collect(keys(schema_node.counts))
+        @info collect(keys(schema_node.counts))
+        if extractor_node isa ExtractCategorical
+            @info data_node.data
+            @info numobs(data_node)
+
+            new_hot_vectors = []
+            new_random_keys = []
+            for i in 1:numobs(data_node)
+                original_hot_vector = data_node.data[:, i]
+                random_key = sample(vals, w)
+                extracted_random_key = extractor_node.keyvalemap[random_key]
+                new_hot_vector = MaybeHotVector(extracted_random_key, extractor_node.n)
+                while original_hot_vector == new_hot_vector
+                    global random_key = sample(vals, w)
+                    extracted_random_key = extractor_node.keyvalemap[random_key]
+                    new_hot_vector = MaybeHotMatrix(MaybeHotVector(extracted_random_key, extractor_node.n))
+                    @info "while"
+                    @info original_hot_vector new_hot_vector
+                end
+                push!(new_random_keys, random_key)
+                push!(new_hot_vectors, new_hot_vector)
+                @info "appending"
+            end
+            maybe_hot_matrix = hcat(new_hot_vectors...)
+            new_array_node = ArrayNode(maybe_hot_matrix, data_node.metadata)
+            @info "numobs origo" numobs(data_node)
+            @info "numobs" numobs(new_array_node)
+            @info "new data" new_array_node.data
+            return new_array_node, mask_node
+        end
         return ArrayNode(Mill.data(data_node), data_node.metadata), mask_node
     end
 end
-
-
-
-mysample_copy[:atoms].bags
 (s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy)
+
+
+
+a = mask_copy[:lumo]
+mysample_copy[:lumo]
+mask_copy[:atoms].mask
 s == mysample_copy
+mysample_copy[:lumo]
+s[:lumo]
 m == mask_copy
 s
 
