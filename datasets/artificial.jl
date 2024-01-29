@@ -334,7 +334,8 @@ mysample_copy[:lumo]
 s[:lumo]
 m == mask_copy
 s
-
+model(mysample_copy)
+model(s)
 
 e = ExtractDict(Dict(:a => ExtractScalar(Float32, 2, 3),
     :b => ExtractCategorical(1:5)))
