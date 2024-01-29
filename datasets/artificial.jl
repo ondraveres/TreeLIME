@@ -259,30 +259,31 @@ function my_recursion(data_node, mask_node)
 
     if data_node isa ProductNode
         children_names = []
-        children_nodes = []
-        mask_nodes = []
+        modified_data_ch_nodes = []
+        modified_mask_ch_nodes = []
         for (
-            (children_name, children_node),
-            (mask_children_name, mask_children_node)
+            (data_ch_name, data_ch_node),
+            (mask_ch_name, mask_ch_node)
         ) in zip(
             pairs(children(data_node)),
             pairs(children(mask_node))
         )
-            @info "children_name" children_name
-            push!(children_names, children_name)
-            (data_children_node, mask_children_node) = my_recursion(children_node, mask_children_node)
-            push!(children_nodes, data_children_node)
-            push!(mask_nodes, mask_children_node)
+            @info "children_name" data_ch_name
+            push!(children_names, data_ch_name)
+            (modified_child_data, modified_child_mask) = my_recursion(data_ch_node, mask_ch_node)
+            push!(modified_data_ch_nodes, modified_child_data)
+            push!(modified_mask_ch_nodes, modified_child_mask)
         end
-        nt_data = NamedTuple{Tuple(children_names)}(children_nodes)
-        nt_mask = NamedTuple{Tuple(children_names)}(children(mask_node))
+        nt_data = NamedTuple{Tuple(children_names)}(modified_data_ch_nodes)
+        nt_mask = NamedTuple{Tuple(children_names)}(modified_mask_ch_nodes)
 
         return ProductNode(nt_data), ExplainMill.ProductMask(nt_mask)
     end
     if data_node isa BagNode
         child_node = Mill.data(data_node)
-        (modified_data_child_node, mask_child_node) = my_recursion(child_node, mask_node)
-        return BagNode(modified_data_child_node, data_node.bags, data_node.metadata), mask_child_node
+        (modified_data_child_node, modified_child_mask) = my_recursion(child_node, mask_node.child)
+
+        return BagNode(modified_data_child_node, data_node.bags, data_node.metadata), ExplainMill.BagMask(modified_child_mask, mask_node.bags, mask_node.mask)
     end
     if data_node isa ArrayNode
         return ArrayNode(Mill.data(data_node), data_node.metadata), mask_node
@@ -291,15 +292,24 @@ end
 
 Mill.data(mysample_copy[:atoms])
 
-my_recursion(Mill.data(mysample_copy[:atoms]), mask_copy[:atoms])
+mask_copy[:atoms]
+children(Mill.data(mysample_copy[:atoms]))
+
+mask_copy[:atoms]
+
+my_recursion(Mill.data(mysample_copy[:atoms]), mask_copy[:atoms].child)[1]
+
 mysample_copy[:atoms].bags
+(s, m) = my_recursion(mysample_copy, mask_copy)
+s == mysample_copy
+m == mask_copy
+s
+
+
 e = ExtractDict(Dict(:a => ExtractScalar(Float32, 2, 3),
     :b => ExtractCategorical(1:5)))
 sc = ExtractArray(e([Dict("a" => 1, "b" => 1), Dict("a" => 1, "b" => 1), Dict("a" => 1, "b" => 1)]))
 typeof(sc)
-(s, m) = my_recursion(mysample_copy, mask_copy)
-s == mysample_copy
-m == mask_copy
 mysample_copy == my_recursion(mysample_copy)
 mask_copy
 N = 1  # Number of copies
