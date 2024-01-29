@@ -255,8 +255,7 @@ children(mask)
 mysample_copy[:atoms].bags
 mysample_copy[:atoms] isa ProductNode
 
-function my_recursion(data_node, mask_node)
-
+function my_recursion(data_node, mask_node, extractor_node, schema_node)
     if data_node isa ProductNode
         children_names = []
         modified_data_ch_nodes = []
@@ -270,7 +269,7 @@ function my_recursion(data_node, mask_node)
         )
             @info "children_name" data_ch_name
             push!(children_names, data_ch_name)
-            (modified_child_data, modified_child_mask) = my_recursion(data_ch_node, mask_ch_node)
+            (modified_child_data, modified_child_mask) = my_recursion(data_ch_node, mask_ch_node, extractor_node[data_ch_name], schema_node[data_ch_name])
             push!(modified_data_ch_nodes, modified_child_data)
             push!(modified_mask_ch_nodes, modified_child_mask)
         end
@@ -281,7 +280,7 @@ function my_recursion(data_node, mask_node)
     end
     if data_node isa BagNode
         child_node = Mill.data(data_node)
-        (modified_data_child_node, modified_child_mask) = my_recursion(child_node, mask_node.child)
+        (modified_data_child_node, modified_child_mask) = my_recursion(child_node, mask_node.child, extractor_node.item, schema_node.items)
 
         return BagNode(modified_data_child_node, data_node.bags, data_node.metadata), ExplainMill.BagMask(modified_child_mask, mask_node.bags, mask_node.mask)
     end
@@ -290,17 +289,10 @@ function my_recursion(data_node, mask_node)
     end
 end
 
-Mill.data(mysample_copy[:atoms])
 
-mask_copy[:atoms]
-children(Mill.data(mysample_copy[:atoms]))
-
-mask_copy[:atoms]
-
-my_recursion(Mill.data(mysample_copy[:atoms]), mask_copy[:atoms].child)[1]
 
 mysample_copy[:atoms].bags
-(s, m) = my_recursion(mysample_copy, mask_copy)
+(s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy)
 s == mysample_copy
 m == mask_copy
 s
