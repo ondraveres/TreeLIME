@@ -31,7 +31,7 @@ _s = ArgParseSettings();
 @add_arg_table! _s begin
     ("--dataset"; default = "mutagenesis"; arg_type = String)
     ("--task"; default = "one_of_1_5trees"; arg_type = String)
-    ("--incarnation"; default = 1; arg_type = Int)
+    ("--incarnation"; default = 2; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
 ;
@@ -379,15 +379,16 @@ end
 
 sorted_indices = sortperm(abs.(coef))
 
+coef[sorted_indices]
+sorted_indices
 # Get the indices of the top 10 values in terms of absolute value
-top_indices = sorted_indices[end-1:end]
+top_indices = sorted_indices[end-4:end]
 
 # Get the top 10 values
 top_values = coef[top_indices]
 
 println("Top 10 indices: $top_indices")
 println("Top 10 values: $top_values")
-
 
 # Make predictions
 y_pred = GLMNet.predict(cv, Xmatrix)
