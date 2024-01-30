@@ -259,6 +259,9 @@ my_mask_node = nothing
 my_extractor_node = nothing
 my_schema_node = nothing
 my_data_node = nothing
+function extractbatchandstoreinput(extractor, samples)
+    mapreduce(s -> extractor(s, store_input=true), catobs, samples)
+end
 
 function my_recursion(data_node, mask_node, extractor_node, schema_node)
     if data_node isa ProductNode
@@ -317,7 +320,7 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
 
             end
 
-            new_array_node = extractbatch(extractor_node, new_values)
+            new_array_node = extractbatchandstoreinput(extractor_node, new_values)
             return new_array_node, mask_node
         end
         if mask_node isa ExplainMill.FeatureMask
@@ -334,23 +337,18 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
                     push!(new_random_keys, random_key)
                 end
                 mask_node.mask.x[1] = true
-                new_array_node = extractbatch(extractor_node, new_random_keys)
+                new_array_node = extractbatchandstoreinput(extractor_node, new_random_keys)
             else
                 mask_node.mask.x[1] = false
                 return data_node, mask_node
             end
             return new_array_node, mask_node
         end
-
-
-
+        @info ExplainMill.CategoricalMask
         return ArrayNode(Mill.data(data_node), data_node.metadata), mask_node
     end
 end
-
 (s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy)
-
-s
 
 mysample_copy
 my_mask_node
@@ -359,7 +357,15 @@ mask_copy[:atoms].child[:element].mask
 a = mask_copy[:lumo]
 mysample_copy[:lumo]
 mask_copy[:atoms].mask
+
+s
+mysample_copy
+
 s == mysample_copy
+s[:lumo].data
+mysample_copy[:lumo].data
+s[:lumo]
+
 mysample_copy[:lumo]
 s[:lumo]
 m == mask_copy
