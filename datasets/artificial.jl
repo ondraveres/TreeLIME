@@ -22,6 +22,7 @@ include("common.jl");
 include("loader.jl");
 include("stats.jl");
 using PrintTypesTersely;
+using GLMNet
 function StatsBase.predict(mymodel::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
     o = mapslices(x -> ikeyvalmap[argmax(x)], mymodel(ds), dims=1)
 end;
@@ -244,21 +245,7 @@ mysample = ds[1]
 
 
 mask = ExplainMill.create_mask_structure(mysample, d -> SimpleMask(fill(false, d)))
-mysample_copy = deepcopy(mysample)
-mask_copy = deepcopy(mask)
-sch_copy = deepcopy(sch)
-extractor_copy = deepcopy(extractor)
 
-children(mysample_copy)
-children(mysample)
-children(mask)
-mysample_copy[:atoms].bags
-mysample_copy[:atoms] isa ProductNode
-
-my_mask_node = nothing
-my_extractor_node = nothing
-my_schema_node = nothing
-my_data_node = nothing
 function extractbatchandstoreinput(extractor, samples)
     mapreduce(s -> extractor(s, store_input=true), catobs, samples)
 end
@@ -348,59 +335,89 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
         return ArrayNode(Mill.data(data_node), data_node.metadata), mask_node
     end
 end
-(s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy)
-
-flat_view = ExplainMill.FlatView(mask)
-new_flat_view = ExplainMill.FlatView(m)
-
-mask_bool_vector = [flat_view[i] for i in 1:length(flat_view.itemmap)]
-new_mask_bool_vector = [new_flat_view[i] for i in 1:length(new_flat_view.itemmap)]
-
-mean(mask_bool_vector)
-mean(new_mask_bool_vector)
-
-
-
-
-
-# ret = treemap(mysample_copy, mask_copy, extractor_copy, sch_copy; complete=false) do n, ch
-#     (data_node, mask_node, extractor_node, schema_node) = n
-#     if (isleaf(data_node))
-#         data_node.data
-#         data_node.metadata
-#         schema_node.counts
-
-#         if extractor_node isa ExtractCategorical
+N = 10000
+modified_samples = []
+modification_masks = []
+flat_modification_masks = []
+labels = []
+for i in 1:N
+    mysample_copy = deepcopy(mysample)
+    mask_copy = deepcopy(mask)
+    sch_copy = deepcopy(sch)
+    extractor_copy = deepcopy(extractor)
+    (s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy)
+    new_flat_view = ExplainMill.FlatView(m)
+    new_mask_bool_vector = [new_flat_view[i] for i in 1:length(new_flat_view.itemmap)]
+    push!(flat_modification_masks, new_mask_bool_vector)
+    push!(labels, argmax(model(s))[1])
+    push!(modified_samples, s)
+    push!(modification_masks, m)
+end
+mean(labels .== 2)
 
 
-#             total = sum(values(schema_node.counts))
-#             normalized_probs = [v / total for v in values(schema_node.counts)]
-#             w = Weights(normalized_probs)
-#             vals = collect(keys(schema_node.counts))
 
-#             new_data = []
-#             for i in 1:length(mask_node.mask.m.x)
-#                 if rand() < 0.0
-#                     random_key = sample(vals, w)
-#                     extracted_random_key = extractor_node.keyvalemap[random_key]
-#                     mask_node.mask.m.x[i] = true
-#                     new_hot_vector = MaybeHotVector(extracted_random_key, extractor_node.n)
-#                     new_hot_matrix = MaybeHotMatrix(new_hot_vector)
-#                     push!(new_data, new_hot_matrix)
-#                 else
-#                     push!(new_data, data_node.data[:, i])
-#                 end
-#             end
-#             concatenated_data = hcat(new_data...)
-#             new_array_node = ArrayNode(concatenated_data, data_node.metadata)
-#             @info "origo data" data_node.data
-#             @info "změněný data" new_array_node.data
-#             return (new_array_node, mask_node, extractor_node, schema_node)
-#         elseif extractor_node isa ExtractScalar
-#             @info "scalar"
-#         else
-#             @error "unknown extractor type"
-#         end
-#     end
-#     return (data_node, mask_node, extractor_node, schema_node)
-# end
+
+
+X = hcat(flat_modification_masks...)
+y = labels
+
+Xmatrix = convert(Matrix, X')  # transpose X because glmnet assumes features are in columns
+yvector = convert(Vector, y)
+
+# Fit the model
+cv = glmnetcv(Xmatrix, yvector; alpha=1.0)  # alpha=1.0 for lasso
+
+# The fitted coefficients at the best lambda can be accessed as follows:
+coef = GLMNet.coef(cv)
+
+# To see which features had a big influence, you can look at the magnitude of the coefficients.
+# Features with larger absolute coefficient values had a bigger influence.
+for (i, c) in enumerate(coef)
+    println("Feature $i has coefficient $c")
+end
+
+sorted_indices = sortperm(abs.(coef))
+
+# Get the indices of the top 10 values in terms of absolute value
+top_indices = sorted_indices[end-1:end]
+
+# Get the top 10 values
+top_values = coef[top_indices]
+
+println("Top 10 indices: $top_indices")
+println("Top 10 values: $top_values")
+
+
+# Make predictions
+y_pred = GLMNet.predict(cv, Xmatrix)
+
+# Convert probabilities to class labels
+y_pred_labels = ifelse.(y_pred .>= 0.5, 2, 1)
+
+# Calculate accuracy
+my_accuracy = mean(y_pred_labels .== yvector)
+
+println("Accuracy: $my_accuracy")
+
+new_mask = ExplainMill.create_mask_structure(mysample, d -> SimpleMask(fill(true, d)))
+
+leafmap!(new_mask) do mask_node
+    mask_node.mask.x .= false
+    return mask_node
+end
+
+new_flat_view = ExplainMill.FlatView(new_mask)
+new_flat_view[top_indices] = true
+
+
+
+ex = ExplainMill.e2boolean(mysample, new_mask, extractor)
+
+
+json_str = JSON.json(ex)
+
+# Write the JSON string to a file
+open("my_explanation.json", "w") do f
+    write(f, json_str)
+end
