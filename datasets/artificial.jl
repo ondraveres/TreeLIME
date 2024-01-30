@@ -344,118 +344,14 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
             end
             return new_array_node, mask_node
         end
-        @info ExplainMill.CategoricalMask
+        @error ExplainMill.CategoricalMask
         return ArrayNode(Mill.data(data_node), data_node.metadata), mask_node
     end
 end
 (s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy)
 
-mysample_copy
-my_mask_node
-mask_copy[:atoms].child[:element].mask
-
-a = mask_copy[:lumo]
-mysample_copy[:lumo]
-mask_copy[:atoms].mask
-
-s
-mysample_copy
-
-s == mysample_copy
-s[:lumo].data
-mysample_copy[:lumo].data
-s[:lumo]
-
-mysample_copy[:lumo]
-s[:lumo]
-m == mask_copy
-s
-model(mysample_copy)
-model(s)
-
-e = ExtractDict(Dict(:a => ExtractScalar(Float32, 2, 3),
-    :b => ExtractCategorical(1:5)))
-sc = ExtractArray(e([Dict("a" => 1, "b" => 1), Dict("a" => 1, "b" => 1), Dict("a" => 1, "b" => 1)]))
-typeof(sc)
-mysample_copy == my_recursion(mysample_copy)
-mask_copy
-N = 1  # Number of copies
-copies = Array{Tuple{typeof(mysample),typeof(mask)},1}(undef, N)
-my_data_node = nothing
-my_mask_node = nothing
-my_extractor_node = nothing
-for i in 1:N
-
-    mysample_copy = deepcopy(mysample)
-    mask_copy = deepcopy(mask)
-    sch_copy = deepcopy(sch)
-    extractor_copy = deepcopy(extractor)
-
-    leafmap!(mysample_copy, mask_copy, sch_copy, extractor_copy; complete=false, order=LevelOrder()) do (data_node, mask_node, schema_node, extractor_node)
-        total = sum(values(schema_node.counts))
-        normalized_probs = [v / total for v in values(schema_node.counts)]
-        n = length(normalized_probs)  # Get the number of elements
-        w = Weights(ones(n))
-        #w = Weights(normalized_probs)
-        vals = collect(keys(schema_node.counts))
-
-        if extractor_node isa ExtractCategorical
-            for i in 1:length(mask_node.mask.x)
-                if rand() > 0.5
-                    extracted_random_key = extractor_node.keyvalemap[sample(vals, w)]
-                    mask_node.mask.x[i] = true
-                    original_hot_vector = data_node.data[:, i]
-                    new_hot_vector = MaybeHotVector(extracted_random_key, extractor_node.n)
-                    while original_hot_vector == new_hot_vector
-                        extracted_random_key = extractor_node.keyvalemap[sample(vals, w)]
-                        new_hot_vector = MaybeHotVector(extracted_random_key, extractor_node.n)
-                    end
-                    new_hot_matrix = MaybeHotMatrix(new_hot_vector)
-                    new_data = hcat(data_node.data[:, 1:i-1], new_hot_matrix, data_node.data[:, i+1:end])
-                    data_node.data = new_data
-                end
-            end
-            global my_data_node = data_node
-            global my_mask_node = mask_node
-            global my_extractor_node = extractor_node
-
-        elseif extractor_node isa ExtractScalar
-
-            if rand() > 0.0
-                extracted_random_key = extractor_node(sample(vals, w))
-                @info "start"
-                @info extracted_random_key
-                @info extractor_node
-                @info data_node.data
-                @info mask_node
-                @info mask_node.cols
-                @info mask_node.rows
-                @info length(mask_node.mask.x)
-                # data_node.data = extracted_random_key.data
-                # mask_node.mask.m.x[1] = true
-
-            end
-        else
-            @error "unknown extractor type"
-        end
-    end
-    copies[i] = (mysample_copy, mask_copy)
-end
-
-
-my_mask.mask
-my_sch
-mask_labels = []
-model(mysample_copy)
-mysample
-copies[1][1]
-for i in 1:N
-    push!(mask_labels, argmax(model(copies[i][1]))[1])
-end
-mean(mask_labels)
-
 flat_view = ExplainMill.FlatView(mask)
-new_flat_view = ExplainMill.FlatView(mask_copy)
+new_flat_view = ExplainMill.FlatView(m)
 
 mask_bool_vector = [flat_view[i] for i in 1:length(flat_view.itemmap)]
 new_mask_bool_vector = [new_flat_view[i] for i in 1:length(new_flat_view.itemmap)]
@@ -463,17 +359,6 @@ new_mask_bool_vector = [new_flat_view[i] for i in 1:length(new_flat_view.itemmap
 mean(mask_bool_vector)
 mean(new_mask_bool_vector)
 
-
-model(mysample)
-model(mysample_copy)
-
-mysample[:lumo]
-mysample_copy[:lumo]
-
-mysample_copy
-mysample
-
-global_mask_node.mask.m.x
 
 
 
