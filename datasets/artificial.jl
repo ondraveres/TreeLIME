@@ -243,7 +243,7 @@ PrintTypesTersely.off()
 mysample = ds[1]
 
 
-mask = ExplainMill.create_mask_structure(mysample, d -> SimpleMask(fill(true, d)))
+mask = ExplainMill.create_mask_structure(mysample, d -> SimpleMask(fill(false, d)))
 mysample_copy = deepcopy(mysample)
 mask_copy = deepcopy(mask)
 sch_copy = deepcopy(sch)
@@ -254,6 +254,11 @@ children(mysample)
 children(mask)
 mysample_copy[:atoms].bags
 mysample_copy[:atoms] isa ProductNode
+
+my_mask_node = nothing
+my_extractor_node = nothing
+my_schema_node = nothing
+my_data_node = nothing
 
 function my_recursion(data_node, mask_node, extractor_node, schema_node)
     if data_node isa ProductNode
@@ -289,42 +294,67 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
         n = length(normalized_probs)  # Get the number of elements
         w = Weights(ones(n))
         vals = collect(keys(schema_node.counts))
-        @info collect(keys(schema_node.counts))
-        if extractor_node isa ExtractCategorical
-            @info data_node.data
-            @info numobs(data_node)
 
+        if mask_node isa ExplainMill.CategoricalMask
             new_hot_vectors = []
             new_random_keys = []
+            global my_mask_node = mask_node
+            global my_extractor_node = extractor_node
+            global my_schema_node = schema_node
+            global my_data_node = data_node
+            @info mask_node
+            new_values = []
             for i in 1:numobs(data_node)
-                original_hot_vector = data_node.data[:, i]
-                random_key = sample(vals, w)
-                extracted_random_key = extractor_node.keyvalemap[random_key]
-                new_hot_vector = MaybeHotVector(extracted_random_key, extractor_node.n)
-                while original_hot_vector == new_hot_vector
-                    global random_key = sample(vals, w)
-                    extracted_random_key = extractor_node.keyvalemap[random_key]
-                    new_hot_vector = MaybeHotMatrix(MaybeHotVector(extracted_random_key, extractor_node.n))
-                    @info "while"
-                    @info original_hot_vector new_hot_vector
+                # original_hot_vector = data_node.data[:, i]
+                if rand() > 0.5
+                    random_val = sample(vals, w)
+                    push!(new_values, random_val)
+                    mask_node.mask.x[i] = true
+                else
+                    push!(new_values, data_node.metadata[i])
+                    mask_node.mask.x[i] = false
                 end
-                push!(new_random_keys, random_key)
-                push!(new_hot_vectors, new_hot_vector)
-                @info "appending"
+
             end
-            maybe_hot_matrix = hcat(new_hot_vectors...)
-            new_array_node = ArrayNode(maybe_hot_matrix, data_node.metadata)
-            @info "numobs origo" numobs(data_node)
-            @info "numobs" numobs(new_array_node)
-            @info "new data" new_array_node.data
+
+            new_array_node = extractbatch(extractor_node, new_values)
             return new_array_node, mask_node
         end
+        if mask_node isa ExplainMill.FeatureMask
+            if rand() > 0.5
+                new_hot_vectors = []
+                new_random_keys = []
+                global my_mask_node = mask_node
+                global my_extractor_node = extractor_node
+                global my_schema_node = schema_node
+                global my_data_node = data_node
+                @info mask_node
+                for i in 1:numobs(data_node)
+                    random_key = sample(vals, w)
+                    push!(new_random_keys, random_key)
+                end
+                mask_node.mask.x[1] = true
+                new_array_node = extractbatch(extractor_node, new_random_keys)
+            else
+                mask_node.mask.x[1] = false
+                return data_node, mask_node
+            end
+            return new_array_node, mask_node
+        end
+
+
+
         return ArrayNode(Mill.data(data_node), data_node.metadata), mask_node
     end
 end
+
 (s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy)
 
+s
 
+mysample_copy
+my_mask_node
+mask_copy[:atoms].child[:element].mask
 
 a = mask_copy[:lumo]
 mysample_copy[:lumo]
