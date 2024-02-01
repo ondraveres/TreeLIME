@@ -1,5 +1,5 @@
 # for ((i=1;i<=20;i+=1)); do  for d in  one_of_1_2trees  one_of_1_5trees  one_of_1_paths  one_of_2_5trees  one_of_2_paths  one_of_5_paths ; do  julia -p 24 artificial.jl --dataset $d --incarnation $i ; done ; done
-using Revise
+using Revise;
 using Pkg;
 cd("/home/veresond/ExplainMill.jl/myscripts/datasets");
 Pkg.activate("..");
@@ -31,7 +31,7 @@ _s = ArgParseSettings();
 @add_arg_table! _s begin
     ("--dataset"; default = "mutagenesis"; arg_type = String)
     ("--task"; default = "one_of_1_5trees"; arg_type = String)
-    ("--incarnation"; default = 2; arg_type = Int)
+    ("--incarnation"; default = 1; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
 ;
@@ -41,7 +41,7 @@ settings = parse_args(ARGS, _s; as_symbols=true);
 
 settings = NamedTuple{Tuple(keys(settings))}(values(settings));
 
-model_name = "hundreditermodel22_1.bson"
+model_name = "first-feb-model.bson"
 
 ###############################################################
 # start by loading all samples
@@ -81,7 +81,7 @@ if !isfile(resultsdir(model_name))
         # b = Dict("" => d -> Chain(Dense(d, settings.k, relu), Dense(settings.k, 2)))
     )
     model = @set model.m = Chain(model.m, Dense(settings.k, 2))
-    for i in 1:2
+    for i in 1:100
         @info "start of epoch $i"
         ###############################################################
         #  train
@@ -168,6 +168,7 @@ end
 Random.seed!(settings.incarnation)
 strain = 2
 ds = loadclass(strain, 1000)
+model(ds)[:, 1]
 if false
 
     extractor(samples[10111], store_input=true).metadata
@@ -246,8 +247,8 @@ mysample = ds[1]
 
 mask = ExplainMill.create_mask_structure(mysample, d -> SimpleMask(fill(false, d)))
 
-function extractbatchandstoreinput(extractor, samples)
-    mapreduce(s -> extractor(s, store_input=true), catobs, samples)
+function extractbatch_andstore(extractor, samples; store_input=false)
+    mapreduce(s -> extractor(s, store_input=store_input), catobs, samples)
 end
 
 function my_recursion(data_node, mask_node, extractor_node, schema_node)
@@ -292,7 +293,6 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
             global my_extractor_node = extractor_node
             global my_schema_node = schema_node
             global my_data_node = data_node
-            @info mask_node
             new_values = []
             for i in 1:numobs(data_node)
                 # original_hot_vector = data_node.data[:, i]
@@ -307,7 +307,7 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
 
             end
 
-            new_array_node = extractbatchandstoreinput(extractor_node, new_values)
+            new_array_node = extractbatch_andstore(extractor_node, new_values; store_input=true)
             return new_array_node, mask_node
         end
         if mask_node isa ExplainMill.FeatureMask
@@ -318,13 +318,12 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
                 global my_extractor_node = extractor_node
                 global my_schema_node = schema_node
                 global my_data_node = data_node
-                @info mask_node
                 for i in 1:numobs(data_node)
                     random_key = sample(vals, w)
                     push!(new_random_keys, random_key)
                 end
                 mask_node.mask.x[1] = true
-                new_array_node = extractbatchandstoreinput(extractor_node, new_random_keys)
+                new_array_node = extractbatch_andstore(extractor_node, new_random_keys; store_input=true)
             else
                 mask_node.mask.x[1] = false
                 return data_node, mask_node
@@ -355,6 +354,8 @@ for i in 1:N
 end
 mean(labels .== 2)
 
+mean(flat_modification_masks)
+
 
 
 
@@ -371,24 +372,29 @@ cv = glmnetcv(Xmatrix, yvector; alpha=1.0)  # alpha=1.0 for lasso
 # The fitted coefficients at the best lambda can be accessed as follows:
 coef = GLMNet.coef(cv)
 
+coef
 # To see which features had a big influence, you can look at the magnitude of the coefficients.
 # Features with larger absolute coefficient values had a bigger influence.
 for (i, c) in enumerate(coef)
     println("Feature $i has coefficient $c")
 end
+# sorted_indices = sortperm(abs.(coef))
 
-sorted_indices = sortperm(abs.(coef))
+# coef[sorted_indices]
+# sorted_indices
+# # Get the indices of the top 10 values in terms of absolute value
+# top_indices = sorted_indices[end-4:end]
 
-coef[sorted_indices]
-sorted_indices
-# Get the indices of the top 10 values in terms of absolute value
-top_indices = sorted_indices[end-4:end]
+# # Get the top 10 values
+# top_values = coef[top_indices]
 
-# Get the top 10 values
-top_values = coef[top_indices]
+# println("Top 10 indices: $top_indices")
+# println("Top 10 values: $top_values")
 
-println("Top 10 indices: $top_indices")
-println("Top 10 values: $top_values")
+non_zero_indices = findall(x -> abs(x) > 0.1, coef)
+
+
+
 
 # Make predictions
 y_pred = GLMNet.predict(cv, Xmatrix)
@@ -409,7 +415,7 @@ leafmap!(new_mask) do mask_node
 end
 
 new_flat_view = ExplainMill.FlatView(new_mask)
-new_flat_view[top_indices] = true
+new_flat_view[non_zero_indices] = true
 
 
 
@@ -419,6 +425,6 @@ ex = ExplainMill.e2boolean(mysample, new_mask, extractor)
 json_str = JSON.json(ex)
 
 # Write the JSON string to a file
-open("my_explanation.json", "w") do f
+open(resultsdir("my_explanation.json"), "w") do f
     write(f, json_str)
 end
