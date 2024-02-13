@@ -30,7 +30,7 @@ PrintTypesTersely.off();
 _s = ArgParseSettings();
 @add_arg_table! _s begin
     ("--dataset"; default = "mutagenesis"; arg_type = String)
-    ("--task"; default = "one_of_1_5trees"; arg_type = String)
+    ("--task"; default = "one_of_2_5trees"; arg_type = String)
     ("--incarnation"; default = 1; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
@@ -368,9 +368,20 @@ yvector = convert(Vector, y)
 
 # Fit the model
 cv = glmnetcv(Xmatrix, yvector; alpha=1.0)  # alpha=1.0 for lasso
+βs = cv.path.betas;
+λs = cv.lambda;
+βs
+using Plots
+sharedOpts = (legend=false, xlabel="lambda", xscale=:log10)
+p2 = plot(λs, βs', title="Across Cross Validation runs"; sharedOpts...);
+p2
 
 # The fitted coefficients at the best lambda can be accessed as follows:
 coef = GLMNet.coef(cv)
+
+cv
+
+non_zero_indices = findall(x -> abs(x) > 0, coef)
 
 coef
 # To see which features had a big influence, you can look at the magnitude of the coefficients.
@@ -391,7 +402,7 @@ end
 # println("Top 10 indices: $top_indices")
 # println("Top 10 values: $top_values")
 
-non_zero_indices = findall(x -> abs(x) > 0.1, coef)
+
 
 
 
