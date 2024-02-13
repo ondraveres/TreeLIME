@@ -1,8 +1,8 @@
 # for ((i=1;i<=20;i+=1)); do  for d in  one_of_1_2trees  one_of_1_5trees  one_of_1_paths  one_of_2_5trees  one_of_2_paths  one_of_5_paths ; do  julia -p 24 artificial.jl --dataset $d --incarnation $i ; done ; done
-using Revise;
 using Pkg;
 cd("/home/veresond/ExplainMill.jl/myscripts/datasets");
 Pkg.activate("..");
+using Revise;
 using ArgParse;
 using Flux;
 using Mill;
