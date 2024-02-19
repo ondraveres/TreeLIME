@@ -33,8 +33,8 @@ end;
 PrintTypesTersely.off();
 _s = ArgParseSettings();
 @add_arg_table! _s begin
-    ("--dataset"; default = "hepatitis"; arg_type = String)
-    ("--task"; default = "one_of_5_1trees"; arg_type = String)
+    ("--dataset"; default = "mutagenesis"; arg_type = String)
+    ("--task"; default = "one_of_2_5trees"; arg_type = String)
     ("--incarnation"; default = 8; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
@@ -45,7 +45,7 @@ settings = parse_args(ARGS, _s; as_symbols=true);
 
 settings = NamedTuple{Tuple(keys(settings))}(values(settings));
 
-model_name = "first-feb-model.bson"
+model_name = "nineteenth-feb-model.bson"
 
 ###############################################################
 # start by loading all samples
@@ -85,7 +85,7 @@ if !isfile(resultsdir(model_name))
         # b = Dict("" => d -> Chain(Dense(d, settings.k, relu), Dense(settings.k, 2)))
     )
     model = @set model.m = Chain(model.m, Dense(settings.k, 2))
-    for i in 1:100
+    for i in 1:10
         @info "start of epoch $i"
         ###############################################################
         #  train
@@ -113,7 +113,7 @@ if !isfile(resultsdir(model_name))
 
         mean(Flux.onecold(predictions) .== labels)
 
-        if (acc > 0.95)
+        if (acc > 0.999)
             break
         end
         # if cg > 0 && eg > 0
