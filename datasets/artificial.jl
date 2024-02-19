@@ -1,6 +1,10 @@
 # for ((i=1;i<=20;i+=1)); do  for d in  one_of_1_2trees  one_of_1_5trees  one_of_1_paths  one_of_2_5trees  one_of_2_paths  one_of_5_paths ; do  julia -p 24 artificial.jl --dataset $d --incarnation $i ; done ; done
 using Pkg;
-cd("/home/veresond/ExplainMill.jl/myscripts/datasets");
+try
+    cd("/Users/ondrejveres/Diplomka/ExplainMill.jl/myscripts/datasets")
+catch
+    cd("/home/veresond/ExplainMill.jl/myscripts/datasets")
+end
 Pkg.activate("..");
 using Revise;
 using ArgParse;
@@ -29,9 +33,9 @@ end;
 PrintTypesTersely.off();
 _s = ArgParseSettings();
 @add_arg_table! _s begin
-    ("--dataset"; default = "mutagenesis"; arg_type = String)
-    ("--task"; default = "one_of_2_5trees"; arg_type = String)
-    ("--incarnation"; default = 1; arg_type = Int)
+    ("--dataset"; default = "hepatitis"; arg_type = String)
+    ("--task"; default = "one_of_5_1trees"; arg_type = String)
+    ("--incarnation"; default = 8; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
 ;
