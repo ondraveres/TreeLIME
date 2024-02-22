@@ -1,11 +1,12 @@
 # for ((i=1;i<=20;i+=1)); do  for d in  one_of_1_2trees  one_of_1_5trees  one_of_1_paths  one_of_2_5trees  one_of_2_paths  one_of_5_paths ; do  julia -p 24 artificial.jl --dataset $d --incarnation $i ; done ; done
-using Pkg;
+using Pkg
 try
     cd("/Users/ondrejveres/Diplomka/ExplainMill.jl/myscripts/datasets")
 catch
     cd("/home/veresond/ExplainMill.jl/myscripts/datasets")
 end
 Pkg.activate("..");
+using JET
 using Revise;
 using ArgParse;
 using Flux;
@@ -22,6 +23,9 @@ using Serialization;
 using Setfield;
 using DataFrames;
 using ExplainMill: jsondiff, nnodes, nleaves;
+using HierarchicalUtils
+using Optimisers
+using Random
 include("common.jl");
 include("loader.jl");
 include("stats.jl");
@@ -52,23 +56,18 @@ model_name = "nineteenth-feb-model.bson"
 ###############################################################
 ;
 samples, labels, concepts = loaddata(settings);
-loaddata(settings)[3];
-concepts;
 labels = vcat(labels, fill(2, length(concepts)));
 samples = vcat(samples, concepts);
 
 resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...);
-println("start");
-println("resultsdir() = ", resultsdir());
+
 ###############################################################
 # create schema of the JSON
 ###############################################################
 sch = JsonGrinder.schema(vcat(samples, concepts, Dict()));
 if !isfile(resultsdir(model_name))
     !isdir(resultsdir()) && mkpath(resultsdir())
-    sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
     extractor = suggestextractor(sch)
-
     trndata = extractbatch(extractor, samples)
     function makebatch()
         i = rand(1:2000, 100)
@@ -76,6 +75,7 @@ if !isfile(resultsdir(model_name))
     end
     ds = extractor(JsonGrinder.sample_synthetic(sch))
     good_model, concept_gap = nothing, 0
+    random_useless = 10
     # good_model, concept_gap
     local model = reflectinmodel(
         sch,
@@ -90,6 +90,7 @@ if !isfile(resultsdir(model_name))
         ###############################################################
         #  train
         ###############################################################
+
         opt = ADAM()
         ps = Flux.params(model)
         loss = (x, y) -> Flux.logitcrossentropy(model(x), y)
@@ -126,10 +127,8 @@ if !isfile(resultsdir(model_name))
     if concept_gap < 0
         error("Failed to train a model")
     end
-    #model = good_model
     BSON.@save resultsdir(model_name) model extractor sch
 end;
-
 
 resultsdir();
 using Flux;
@@ -241,7 +240,7 @@ if false
 end
 
 
-using HierarchicalUtils
+
 
 ### the players
 PrintTypesTersely.off()
