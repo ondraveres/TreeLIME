@@ -6,8 +6,8 @@ catch
     cd("/home/veresond/ExplainMill.jl/myscripts/datasets")
 end
 Pkg.activate("..");
-using JET
-using Revise;
+#using JET
+#using Revise;
 using ArgParse;
 using Flux;
 using Mill;
@@ -22,28 +22,28 @@ using ExplainMill;
 using Serialization;
 using Setfield;
 using DataFrames;
-using ExplainMill: jsondiff, nnodes, nleaves;
+using ExplainMill
 using HierarchicalUtils
 using Optimisers
 using Random
 include("common.jl");
 include("loader.jl");
 include("stats.jl");
-using PrintTypesTersely;
+#using PrintTypesTersely;
 using GLMNet
+using Plots
 function StatsBase.predict(mymodel::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
     o = mapslices(x -> ikeyvalmap[argmax(x)], mymodel(ds), dims=1)
 end;
-PrintTypesTersely.off();
 _s = ArgParseSettings();
-@add_arg_table! _s begin
+@time @add_arg_table! _s begin
     ("--dataset"; default = "mutagenesis"; arg_type = String)
     ("--task"; default = "one_of_2_5trees"; arg_type = String)
     ("--incarnation"; default = 8; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
 ;
-settings = parse_args(ARGS, _s; as_symbols=true);
+@time settings = parse_args(ARGS, _s; as_symbols=true);
 
 
 
@@ -54,17 +54,24 @@ model_name = "nineteenth-feb-model.bson"
 ###############################################################
 # start by loading all samples
 ###############################################################
-;
-samples, labels, concepts = loaddata(settings);
+
+@time samples, labels, concepts = loaddata(settings);
 labels = vcat(labels, fill(2, length(concepts)));
 samples = vcat(samples, concepts);
 
 resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...);
-
 ###############################################################
 # create schema of the JSON
 ###############################################################
-sch = JsonGrinder.schema(vcat(samples, concepts, Dict()));
+schema_file = resultsdir("schema.bson")
+if isfile(schema_file)
+    @info "Schema file exists, loading from file"
+    @time sch = BSON.load(schema_file)
+else
+    @info "Schema file does not exist, creating new schema"
+    sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
+    BSON.@save schema_file sch
+end
 if !isfile(resultsdir(model_name))
     !isdir(resultsdir()) && mkpath(resultsdir())
     extractor = suggestextractor(sch)
@@ -130,14 +137,8 @@ if !isfile(resultsdir(model_name))
     BSON.@save resultsdir(model_name) model extractor sch
 end;
 
-resultsdir();
-using Flux;
-isfile(resultsdir(model_name));
+
 d = BSON.load(resultsdir(model_name));
-
-
-
-
 (model, extractor, sch) = d[:model], d[:extractor], d[:sch];
 statlayer = StatsLayer()
 ;
@@ -150,9 +151,6 @@ logsoft_model = @set model.m = Chain(model.m, logsoftmax);
 #  Helper functions for explainability
 ###############################################################
 const ci = PrayTools.classindexes(labels)
-ci
-
-ci
 
 function loadclass(k, n=typemax(Int))
     dss = map(s -> extractor(s, store_input=true), sample(samples[ci[k]], min(n, length(ci[k])), replace=false))
@@ -170,8 +168,7 @@ end
 
 Random.seed!(settings.incarnation)
 strain = 2
-ds = loadclass(strain, 1000)
-model(ds)[:, 1]
+ds = loadclass(strain, 100)
 if false
 
     extractor(samples[10111], store_input=true).metadata
@@ -216,7 +213,6 @@ if false
         end
     end
 
-    PrintTypesTersely.on()
 
     ExplainMill.DafExplainer()
     exdf = DataFrame()
@@ -242,11 +238,8 @@ end
 
 
 
-### the players
-PrintTypesTersely.off()
 
 mysample = ds[1]
-
 
 mask = ExplainMill.create_mask_structure(mysample, d -> SimpleMask(fill(false, d)))
 
@@ -337,7 +330,7 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
         return ArrayNode(Mill.data(data_node), data_node.metadata), mask_node
     end
 end
-N = 10000
+N = 100
 modified_samples = []
 modification_masks = []
 flat_modification_masks = []
@@ -348,7 +341,7 @@ for i in 1:N
     sch_copy = deepcopy(sch)
     extractor_copy = deepcopy(extractor)
     (s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy)
-    new_flat_view = ExplainMill.FlatView(m)
+    local new_flat_view = ExplainMill.FlatView(m)
     new_mask_bool_vector = [new_flat_view[i] for i in 1:length(new_flat_view.itemmap)]
     push!(flat_modification_masks, new_mask_bool_vector)
     push!(labels, argmax(model(s))[1])
@@ -374,15 +367,14 @@ cv = glmnetcv(Xmatrix, yvector; alpha=1.0)  # alpha=1.0 for lasso
 βs = cv.path.betas;
 λs = cv.lambda;
 βs
-using Plots
+
 sharedOpts = (legend=false, xlabel="lambda", xscale=:log10)
 p2 = plot(λs, βs', title="Across Cross Validation runs"; sharedOpts...);
-p2
+#p2
 
 # The fitted coefficients at the best lambda can be accessed as follows:
 coef = GLMNet.coef(cv)
 
-cv
 
 non_zero_indices = findall(x -> abs(x) > 0, coef)
 
