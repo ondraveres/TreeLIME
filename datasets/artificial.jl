@@ -5,49 +5,51 @@ try
 catch
     cd("/home/veresond/ExplainMill.jl/myscripts/datasets")
 end
-Pkg.activate("..");
+Pkg.activate("..")
 #using JET
 #using Revise;
-using ArgParse;
-using Flux;
-using Mill;
-using JsonGrinder;
-using JSON;
-using BSON;
-using Statistics;
-using IterTools;
-using PrayTools;
-using StatsBase;
-using ExplainMill;
-using Serialization;
-using Setfield;
-using DataFrames;
+using ArgParse
+using Flux
+using Mill
+using JsonGrinder
+using JSON
+using BSON
+using Statistics
+using IterTools
+using PrayTools
+using StatsBase
+using ExplainMill
+using Serialization
+using Setfield
+using DataFrames
 using ExplainMill
 using HierarchicalUtils
 using Optimisers
 using Random
-include("common.jl");
-include("loader.jl");
-include("stats.jl");
+include("common.jl")
+include("loader.jl")
+include("stats.jl")
+include("treelime.jl")
 #using PrintTypesTersely;
 using GLMNet
 using Plots
+
 function StatsBase.predict(mymodel::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
     o = mapslices(x -> ikeyvalmap[argmax(x)], mymodel(ds), dims=1)
-end;
-_s = ArgParseSettings();
-@time @add_arg_table! _s begin
+end
+_s = ArgParseSettings()
+@add_arg_table! _s begin
     ("--dataset"; default = "mutagenesis"; arg_type = String)
     ("--task"; default = "one_of_2_5trees"; arg_type = String)
     ("--incarnation"; default = 8; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
-;
-@time settings = parse_args(ARGS, _s; as_symbols=true);
+
+settings = parse_args(ARGS, _s; as_symbols=true)
 
 
 
-settings = NamedTuple{Tuple(keys(settings))}(values(settings));
+settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
 model_name = "nineteenth-feb-model.bson"
 
@@ -55,11 +57,11 @@ model_name = "nineteenth-feb-model.bson"
 # start by loading all samples
 ###############################################################
 
-@time samples, labels, concepts = loaddata(settings);
-labels = vcat(labels, fill(2, length(concepts)));
-samples = vcat(samples, concepts);
+samples, labels, concepts = loaddata(settings)
+labels = vcat(labels, fill(2, length(concepts)))
+samples = vcat(samples, concepts)
 
-resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...);
+resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...)
 ###############################################################
 # create schema of the JSON
 ###############################################################
@@ -135,16 +137,16 @@ if !isfile(resultsdir(model_name))
         error("Failed to train a model")
     end
     BSON.@save resultsdir(model_name) model extractor sch
-end;
+end
 
 
-d = BSON.load(resultsdir(model_name));
-(model, extractor, sch) = d[:model], d[:extractor], d[:sch];
+d = BSON.load(resultsdir(model_name))
+(model, extractor, sch) = d[:model], d[:extractor], d[:sch]
 statlayer = StatsLayer()
-;
-model = @set model.m = Chain(model.m, statlayer);
-soft_model = @set model.m = Chain(model.m, softmax);
-logsoft_model = @set model.m = Chain(model.m, logsoftmax);
+
+model = @set model.m = Chain(model.m, statlayer)
+soft_model = @set model.m = Chain(model.m, softmax)
+logsoft_model = @set model.m = Chain(model.m, logsoftmax)
 
 
 ###############################################################
@@ -213,7 +215,6 @@ if false
         end
     end
 
-
     ExplainMill.DafExplainer()
     exdf = DataFrame()
     numobs(ds)
@@ -237,197 +238,9 @@ end
 
 
 
-
-
 mysample = ds[1]
 
-mask = ExplainMill.create_mask_structure(mysample, d -> SimpleMask(fill(false, d)))
-
-function extractbatch_andstore(extractor, samples; store_input=false)
-    mapreduce(s -> extractor(s, store_input=store_input), catobs, samples)
-end
-
-function my_recursion(data_node, mask_node, extractor_node, schema_node)
-    if data_node isa ProductNode
-        children_names = []
-        modified_data_ch_nodes = []
-        modified_mask_ch_nodes = []
-        for (
-            (data_ch_name, data_ch_node),
-            (mask_ch_name, mask_ch_node)
-        ) in zip(
-            pairs(children(data_node)),
-            pairs(children(mask_node))
-        )
-            push!(children_names, data_ch_name)
-            (modified_child_data, modified_child_mask) = my_recursion(data_ch_node, mask_ch_node, extractor_node[data_ch_name], schema_node[data_ch_name])
-            push!(modified_data_ch_nodes, modified_child_data)
-            push!(modified_mask_ch_nodes, modified_child_mask)
-        end
-        nt_data = NamedTuple{Tuple(children_names)}(modified_data_ch_nodes)
-        nt_mask = NamedTuple{Tuple(children_names)}(modified_mask_ch_nodes)
-
-        return ProductNode(nt_data), ExplainMill.ProductMask(nt_mask)
-    end
-    if data_node isa BagNode
-        child_node = Mill.data(data_node)
-        (modified_data_child_node, modified_child_mask) = my_recursion(child_node, mask_node.child, extractor_node.item, schema_node.items)
-
-        return BagNode(modified_data_child_node, data_node.bags, data_node.metadata), ExplainMill.BagMask(modified_child_mask, mask_node.bags, mask_node.mask)
-    end
-    if data_node isa ArrayNode
-        total = sum(values(schema_node.counts))
-        normalized_probs = [v / total for v in values(schema_node.counts)]
-        n = length(normalized_probs)  # Get the number of elements
-        w = Weights(ones(n))
-        vals = collect(keys(schema_node.counts))
-
-        if mask_node isa ExplainMill.CategoricalMask
-            new_hot_vectors = []
-            new_random_keys = []
-            global my_mask_node = mask_node
-            global my_extractor_node = extractor_node
-            global my_schema_node = schema_node
-            global my_data_node = data_node
-            new_values = []
-            for i in 1:numobs(data_node)
-                # original_hot_vector = data_node.data[:, i]
-                if rand() > 0.5
-                    random_val = sample(vals, w)
-                    push!(new_values, random_val)
-                    mask_node.mask.x[i] = true
-                else
-                    push!(new_values, data_node.metadata[i])
-                    mask_node.mask.x[i] = false
-                end
-
-            end
-
-            new_array_node = extractbatch_andstore(extractor_node, new_values; store_input=true)
-            return new_array_node, mask_node
-        end
-        if mask_node isa ExplainMill.FeatureMask
-            if rand() > 0.5
-                new_hot_vectors = []
-                new_random_keys = []
-                global my_mask_node = mask_node
-                global my_extractor_node = extractor_node
-                global my_schema_node = schema_node
-                global my_data_node = data_node
-                for i in 1:numobs(data_node)
-                    random_key = sample(vals, w)
-                    push!(new_random_keys, random_key)
-                end
-                mask_node.mask.x[1] = true
-                new_array_node = extractbatch_andstore(extractor_node, new_random_keys; store_input=true)
-            else
-                mask_node.mask.x[1] = false
-                return data_node, mask_node
-            end
-            return new_array_node, mask_node
-        end
-        @error ExplainMill.CategoricalMask
-        return ArrayNode(Mill.data(data_node), data_node.metadata), mask_node
-    end
-end
-N = 100
-modified_samples = []
-modification_masks = []
-flat_modification_masks = []
-labels = []
-for i in 1:N
-    mysample_copy = deepcopy(mysample)
-    mask_copy = deepcopy(mask)
-    sch_copy = deepcopy(sch)
-    extractor_copy = deepcopy(extractor)
-    (s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy)
-    local new_flat_view = ExplainMill.FlatView(m)
-    new_mask_bool_vector = [new_flat_view[i] for i in 1:length(new_flat_view.itemmap)]
-    push!(flat_modification_masks, new_mask_bool_vector)
-    push!(labels, argmax(model(s))[1])
-    push!(modified_samples, s)
-    push!(modification_masks, m)
-end
-mean(labels .== 2)
-
-mean(flat_modification_masks)
-
-
-
-
-
-X = hcat(flat_modification_masks...)
-y = labels
-
-Xmatrix = convert(Matrix, X')  # transpose X because glmnet assumes features are in columns
-yvector = convert(Vector, y)
-
-# Fit the model
-cv = glmnetcv(Xmatrix, yvector; alpha=1.0)  # alpha=1.0 for lasso
-βs = cv.path.betas;
-λs = cv.lambda;
-βs
-
-sharedOpts = (legend=false, xlabel="lambda", xscale=:log10)
-p2 = plot(λs, βs', title="Across Cross Validation runs"; sharedOpts...);
-#p2
-
-# The fitted coefficients at the best lambda can be accessed as follows:
-coef = GLMNet.coef(cv)
-
-
-non_zero_indices = findall(x -> abs(x) > 0, coef)
-
-coef
-# To see which features had a big influence, you can look at the magnitude of the coefficients.
-# Features with larger absolute coefficient values had a bigger influence.
-for (i, c) in enumerate(coef)
-    println("Feature $i has coefficient $c")
-end
-# sorted_indices = sortperm(abs.(coef))
-
-# coef[sorted_indices]
-# sorted_indices
-# # Get the indices of the top 10 values in terms of absolute value
-# top_indices = sorted_indices[end-4:end]
-
-# # Get the top 10 values
-# top_values = coef[top_indices]
-
-# println("Top 10 indices: $top_indices")
-# println("Top 10 values: $top_values")
-
-
-
-
-
-
-# Make predictions
-y_pred = GLMNet.predict(cv, Xmatrix)
-
-# Convert probabilities to class labels
-y_pred_labels = ifelse.(y_pred .>= 0.5, 2, 1)
-
-# Calculate accuracy
-my_accuracy = mean(y_pred_labels .== yvector)
-
-println("Accuracy: $my_accuracy")
-
-new_mask = ExplainMill.create_mask_structure(mysample, d -> SimpleMask(fill(true, d)))
-
-leafmap!(new_mask) do mask_node
-    mask_node.mask.x .= false
-    return mask_node
-end
-
-new_flat_view = ExplainMill.FlatView(new_mask)
-new_flat_view[non_zero_indices] = true
-
-
-
-ex = ExplainMill.e2boolean(mysample, new_mask, extractor)
-
-
+ex = treelime(mysample, model, extractor, schema)
 json_str = JSON.json(ex)
 
 # Write the JSON string to a file
