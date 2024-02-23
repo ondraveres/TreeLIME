@@ -4,6 +4,12 @@ function stats(dd, ms, extractor, soft_model, i, concepts)
     gap = ExplainMill.confidencegap(soft_model, dd[ms], i)
     fv = ExplainMill.FlatView(ms)
     logical = ExplainMill.e2boolean(dd, ms, extractor)
+    @info "repling"
+    println(repr(concepts))
+    println(repr(logical))
+    (printtree(dd))
+    (printtree(ms))
+    (printtree(dd[ms]))
     ce = map(c -> jsondiff(c, logical), concepts)
     ec = map(c -> jsondiff(logical, c), concepts)
     return ((gap=gap,
@@ -54,42 +60,6 @@ function isdone(exdf, name, pruning_method, sampleno, n)
     !isempty(fdf)
 end
 
-function addexperiment(exdf, e, dd, logsoft_model, i, n, threshold_gap, name, pruning_method, sampleno, settings)
-    # isdone(exdf, name, pruning_method, sampleno, n) && return (exdf)
-    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, i, pruning_method=pruning_method, threshold=threshold_gap)
-    s = merge((
-            name=name,
-            pruning_method=pruning_method,
-            sampleno=sampleno,
-            n=n,
-            time=t,
-            dataset=settings.dataset,
-            task=settings.task,
-            incarnation=settings.incarnation,
-        ),
-        stats(dd, ms, extractor, soft_model, i, concepts)
-    )
-    vcat(exdf, DataFrame([s]))
-end
-
-function addexperimentd(exdf, e, dd, logsoft_model, i, n, threshold_gap, name, pruning_method, sampleno, settings)
-    #isdone(exdf, name, pruning_method, sampleno, n) && return (exdf)
-    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, i, pruning_method=pruning_method, threshold=threshold_gap)
-    s = merge((
-            name=name,
-            pruning_method=pruning_method,
-            sampleno=sampleno,
-            n=n,
-            time=t,
-            dataset=settings.dataset,
-            task=settings.task,
-            incarnation=settings.incarnation,
-        ),
-        stats(dd, ms, extractor, soft_model, i, concepts)
-    )
-end
-
-
 mutable struct StatsLayer
     f::Int
     b::Int
@@ -121,6 +91,27 @@ function addexperiment(exdf, e, dd, logsoft_model, i, n, threshold_gap, name, pr
     s = merge((
             name=name,
             pruning_method=pruning_method,
+            sampleno=sampleno,
+            n=n,
+            time=t,
+            dataset=settings.dataset,
+            task=settings.task,
+            incarnation=settings.incarnation,
+            inferences=statlayer.f,
+            gradients=statlayer.b,
+        ),
+        stats(dd, ms, extractor, soft_model, i, concepts)
+    )
+    vcat(exdf, DataFrame([s]))
+end
+
+function add_treelime_experiment(exdf, dd, logsoft_model, i, n, threshold_gap, sampleno, settings, statlayer::StatsLayer)
+
+    reset!(statlayer)
+    t = @elapsed ms = treelime(mysample, logsoft_model, extractor, schema)
+    s = merge((
+            name="treelime",
+            pruning_method="treelime",
             sampleno=sampleno,
             n=n,
             time=t,

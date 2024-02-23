@@ -48,45 +48,23 @@ function treelime(ds, model, extractor, schema)
 
     non_zero_indices = findall(x -> abs(x) > 0, coef)
 
-    coef
-
-    for (i, c) in enumerate(coef)
-        println("Feature $i has coefficient $c")
-    end
-
     y_pred = GLMNet.predict(cv, Xmatrix)
-
-
     y_pred_labels = ifelse.(y_pred .>= 0.5, 2, 1)
-
-
     my_accuracy = mean(y_pred_labels .== yvector)
 
     println("Accuracy: $my_accuracy")
 
-    new_mask = ExplainMill.create_mask_structure(mysample, d -> SimpleMask(fill(true, d)))
 
-    leafmap!(new_mask) do mask_node
+    leafmap!(mask) do mask_node
         mask_node.mask.x .= false
         return mask_node
     end
 
-    new_flat_view = ExplainMill.FlatView(new_mask)
+    new_flat_view = ExplainMill.FlatView(mask)
     new_flat_view[non_zero_indices] = true
 
-
-
-    ex = ExplainMill.e2boolean(ds, new_mask, extractor)
-
-
-    # json_str = JSON.json(ex)
+    ex = ExplainMill.e2boolean(ds, mask, extractor)
     return ex
-
-    # # Write the JSON string to a file
-    # open(resultsdir("my_explanation.json"), "w") do f
-    #     write(f, json_str)
-    # end
-
 end
 
 

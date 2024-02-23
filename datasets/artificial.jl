@@ -22,7 +22,7 @@ using ExplainMill
 using Serialization
 using Setfield
 using DataFrames
-using ExplainMill
+using ExplainMill: jsondiff, nnodes, nleaves;
 using HierarchicalUtils
 using Optimisers
 using Random
@@ -34,7 +34,7 @@ include("treelime.jl")
 using GLMNet
 using Plots
 
-function StatsBase.predict(mymodel::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
+function mypredict(mymodel::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
     o = mapslices(x -> ikeyvalmap[argmax(x)], mymodel(ds), dims=1)
 end
 _s = ArgParseSettings()
@@ -152,98 +152,100 @@ logsoft_model = @set model.m = Chain(model.m, logsoftmax)
 ###############################################################
 #  Helper functions for explainability
 ###############################################################
-const ci = PrayTools.classindexes(labels)
+const my_class_indexes = PrayTools.classindexes(labels)
 
 function loadclass(k, n=typemax(Int))
-    dss = map(s -> extractor(s, store_input=true), sample(samples[ci[k]], min(n, length(ci[k])), replace=false))
+    dss = map(s -> extractor(s, store_input=true), sample(samples[my_class_indexes[k]], min(n, length(my_class_indexes[k])), replace=false))
     reduce(catobs, dss)
 end
 
 
 function onlycorrect(dss, i, min_confidence=0)
-    correct = predict(soft_model, dss, [1, 2]) .== i
+    correct = mypredict(soft_model, dss, [1, 2]) .== i
     dss = dss[correct[:]]
     min_confidence == 0 && return (dss)
     correct = ExplainMill.confidencegap(soft_model, dss, i) .>= min_confidence
     dss[correct[:]]
 end
 
+function getexplainer(name)
+    if name == "stochastic"
+        return ExplainMill.StochasticExplainer()
+    elseif name == "grad"
+        return ExplainMill.GradExplainer2()
+    elseif name == "gnn"
+        return ExplainMill.GnnExplainer()
+    elseif name == "gnn2"
+        return ExplainMill.GnnExplainer()
+    elseif name == "banz"
+        return ExplainMill.DafExplainer()
+    else
+        error("unknown eplainer $name")
+    end
+end
+
+###############################################################
+#  Explainability experiments
+###############################################################
+
 Random.seed!(settings.incarnation)
 strain = 2
 ds = loadclass(strain, 100)
-if false
 
-    extractor(samples[10111], store_input=true).metadata
-    i = strain
-    concept_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], concepts))
-    sample_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], samples[labels.==2]))
-    threshold_gap = 0.2#floor(0.9 * concept_gap, digits=2)
-    # correct = predict(soft_model, ds, [1, 2])
-    # argmax(soft_model(ds[1]))
-    # soft_model(ds)
-    # mean(Flux.onecold(model(ds) .== labels))
-    # mean(labels)
-    # mean(Flux.onecold(soft_model(ds)) .== labels)
-    # mean(correct)
+i = strain
+concept_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], concepts))
+sample_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], samples[labels.==2]))
+threshold_gap = 0.2
+
+correct_ds = onlycorrect(ds, strain, 0.1)
+ds = correct_ds
+@info "minimum gap on concepts = $(concept_gap) on samples = $(sample_gap)"
+
+heuristic = [:Flat_HAdd, :Flat_HArr, :Flat_HArrft, :LbyL_HAdd, :LbyL_HArr, :LbyL_HArrft]
+uninformative = [:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
+variants = vcat(
+    collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:],
+    collect(Iterators.product(["grad", "gnn", "gnn2", "banz"], vcat(heuristic)))[:],
+)
+ds = ds[1:min(numobs(ds), 3)]
 
 
-    # ExplainMill.confidencegap(soft_model, ds, 2)
-    correct_ds = onlycorrect(ds, strain, 0.1)
-    ds = correct_ds
-    @info "minimum gap on concepts = $(concept_gap) on samples = $(sample_gap)"
+ExplainMill.DafExplainer()
+exdf = DataFrame()
+numobs(ds)
+variants
 
-    heuristic = [:Flat_HAdd, :Flat_HArr, :Flat_HArrft, :LbyL_HAdd, :LbyL_HArr, :LbyL_HArrft]
-    uninformative = [:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
-    variants = vcat(
-        collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:],
-        collect(Iterators.product(["grad", "gnn", "gnn2", "banz"], vcat(heuristic)))[:],
-    )
-    ds = ds[1:min(numobs(ds), 100)]
-    function getexplainer(name)
-        if name == "stochastic"
-            return ExplainMill.StochasticExplainer()
-        elseif name == "grad"
-            return ExplainMill.GradExplainer2()
-        elseif name == "gnn"
-            return ExplainMill.GnnExplainer()
-        elseif name == "gnn2"
-            return ExplainMill.GnnExplainer()
-        elseif name == "banz"
-            return ExplainMill.DafExplainer()
-        else
-            error("unknown eplainer $name")
+if !isfile(resultsdir("stats_" * model_name))
+    for (name, pruning_method) in variants[1:2]
+        e = getexplainer(name)
+        @info "explainer $e on $name with $pruning_method"
+        flush(stdout)
+        for j in 1:numobs(ds)
+            global exdf
+            exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0, 0.1, name, pruning_method, j, settings, statlayer)
         end
+        BSON.@save resultsdir("stats_" * model_name) exdf
     end
-
-    ExplainMill.DafExplainer()
-    exdf = DataFrame()
-    numobs(ds)
-    variants
-    if false
-        if !isfile(resultsdir("stats_" * model_name))
-            for (name, pruning_method) in variants
-                e = getexplainer(name)
-                @info "explainer $e on $name with $pruning_method"
-                flush(stdout)
-                #addexperiment(DataFrame(), e, ds[1], logsoft_model, i, n, threshold_gap, name, pruning_method, 1, settings, statlayer)
-                for j in 1:numobs(ds)
-                    global exdf
-                    exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0, 0.1, name, pruning_method, j, settings, statlayer)
-                end
-                BSON.@save resultsdir("stats_" * model_name) exdf
-            end
-        end
+    for j in 1:numobs(ds)
+        global exdf
+        exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, 0, 0.1, j, settings, statlayer)
+        BSON.@save resultsdir("stats_" * model_name) exdf
     end
 end
 
+t = @elapsed ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, 2, pruning_method=:Flat_Gadd, abs_tol=0.1)
 
 
-mysample = ds[1]
+ds[1][ms]
 
-ex = treelime(mysample, model, extractor, schema)
-json_str = JSON.json(ex)
 
-# Write the JSON string to a file
-open(resultsdir("my_explanation.json"), "w") do f
-    write(f, json_str)
-end
+logical = ExplainMill.e2boolean(ds[1], ms, extractor)
+
+concepts[2]
+logical
+jsondiff(logical, concepts[2])
+jsondiff(concepts[2], logical)
+ce = map(c -> jsondiff(c, logical), concepts)
+concepts[2]["atoms"]
+d1 = concepts[2]["atoms"]
+d2 = logical[:atoms]
