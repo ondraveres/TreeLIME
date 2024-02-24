@@ -6,8 +6,6 @@ catch
     cd("/home/veresond/ExplainMill.jl/myscripts/datasets")
 end
 Pkg.activate("..")
-#using JET
-#using Revise;
 using ArgParse
 using Flux
 using Mill
@@ -22,17 +20,18 @@ using ExplainMill
 using Serialization
 using Setfield
 using DataFrames
-using ExplainMill: jsondiff, nnodes, nleaves;
 using HierarchicalUtils
-using Optimisers
 using Random
+@time using JLD2
+@time using GLMNet
+@time using Plots
+@time using Zygote
+@time using ExplainMill: jsondiff, nnodes, nleaves;
 include("common.jl")
 include("loader.jl")
 include("stats.jl")
 include("treelime.jl")
 #using PrintTypesTersely;
-using GLMNet
-using Plots
 
 function mypredict(mymodel::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
     o = mapslices(x -> ikeyvalmap[argmax(x)], mymodel(ds), dims=1)
@@ -40,7 +39,7 @@ end
 _s = ArgParseSettings()
 @add_arg_table! _s begin
     ("--dataset"; default = "mutagenesis"; arg_type = String)
-    ("--task"; default = "one_of_2_5trees"; arg_type = String)
+    ("--task"; default = "one_of_1_5trees"; arg_type = String)
     ("--incarnation"; default = 8; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
@@ -65,18 +64,19 @@ resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settin
 ###############################################################
 # create schema of the JSON
 ###############################################################
-schema_file = resultsdir("schema.bson")
+schema_file = resultsdir("schema.jdl2")
 if isfile(schema_file)
     @info "Schema file exists, loading from file"
-    @time sch = BSON.load(schema_file)
+    @time sch = load(schema_file, "sch")
 else
     @info "Schema file does not exist, creating new schema"
     sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
-    BSON.@save schema_file sch
+    @save schema_file sch = sch
 end
-if !isfile(resultsdir(model_name))
+# sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
+if false# !isfile(resultsdir(model_name))
     !isdir(resultsdir()) && mkpath(resultsdir())
-    extractor = suggestextractor(sch)
+    @time extractor = suggestextractor(sch)
     trndata = extractbatch(extractor, samples)
     function makebatch()
         i = rand(1:2000, 100)
@@ -215,37 +215,23 @@ exdf = DataFrame()
 numobs(ds)
 variants
 
-if !isfile(resultsdir("stats_" * model_name))
-    for (name, pruning_method) in variants[1:2]
-        e = getexplainer(name)
-        @info "explainer $e on $name with $pruning_method"
-        flush(stdout)
-        for j in 1:numobs(ds)
-            global exdf
-            exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0, 0.1, name, pruning_method, j, settings, statlayer)
-        end
-        BSON.@save resultsdir("stats_" * model_name) exdf
-    end
-    for j in 1:numobs(ds)
-        global exdf
-        exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, 0, 0.1, j, settings, statlayer)
-        BSON.@save resultsdir("stats_" * model_name) exdf
-    end
-end
+# if !isfile(resultsdir("stats_" * model_name))
+
+# for (name, pruning_method) in variants[1:2]
+#     e = getexplainer(name)
+#     @info "explainer $e on $name with $pruning_method"
+#     flush(stdout)
+#     for j in 1:numobs(ds)
+#         global exdf
+#         exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0, 0.1, name, pruning_method, j, settings, statlayer)
+#     end
+#     BSON.@save resultsdir("stats_" * model_name) exdf
+# end
+# for j in 1:numobs(ds)
+#     global exdf
+#     exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, 0, 0.1, j, settings, statlayer)
+#     BSON.@save resultsdir("stats_" * model_name) exdf
+# end
+exdf
 
 t = @elapsed ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, 2, pruning_method=:Flat_Gadd, abs_tol=0.1)
-
-
-ds[1][ms]
-
-
-logical = ExplainMill.e2boolean(ds[1], ms, extractor)
-
-concepts[2]
-logical
-jsondiff(logical, concepts[2])
-jsondiff(concepts[2], logical)
-ce = map(c -> jsondiff(c, logical), concepts)
-concepts[2]["atoms"]
-d1 = concepts[2]["atoms"]
-d2 = logical[:atoms]

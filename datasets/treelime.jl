@@ -63,8 +63,8 @@ function treelime(ds, model, extractor, schema)
     new_flat_view = ExplainMill.FlatView(mask)
     new_flat_view[non_zero_indices] = true
 
-    ex = ExplainMill.e2boolean(ds, mask, extractor)
-    return ex
+    # ex = ExplainMill.e2boolean(ds, mask, extractor)
+    return mask
 end
 
 

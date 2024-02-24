@@ -1,6 +1,5 @@
-using Zygote
+
 function stats(dd, ms, extractor, soft_model, i, concepts)
-    # try
     gap = ExplainMill.confidencegap(soft_model, dd[ms], i)
     fv = ExplainMill.FlatView(ms)
     logical = ExplainMill.e2boolean(dd, ms, extractor)
@@ -12,7 +11,13 @@ function stats(dd, ms, extractor, soft_model, i, concepts)
     (printtree(dd[ms]))
     ce = map(c -> jsondiff(c, logical), concepts)
     ec = map(c -> jsondiff(logical, c), concepts)
-    return ((gap=gap,
+    second_concept = "no second concept"
+    try
+        second_concept = JSON.json(concepts[2])
+    catch
+    end
+    return (
+        (gap=gap,
         misses_nodes=minimum(nnodes(c) for c in ce),
         misses_leaves=minimum(nleaves(c) for c in ce),
         excess_nodes=minimum(nnodes(c) for c in ec),
@@ -22,7 +27,12 @@ function stats(dd, ms, extractor, soft_model, i, concepts)
         cleaves=nleaves(concepts),
         cnodes=nnodes(concepts),
         selected=length(ExplainMill.useditems(fv)),
-        flatlength=length(fv)))
+        explanation_json=JSON.json(logical),
+        concepts_1_json=JSON.json(concepts[1]),
+        concepts_2_json=second_concept,
+        flatlength=length(fv),
+    )
+    )
     # catch e
     #     @show dd
     #     @show ms
@@ -106,9 +116,8 @@ function addexperiment(exdf, e, dd, logsoft_model, i, n, threshold_gap, name, pr
 end
 
 function add_treelime_experiment(exdf, dd, logsoft_model, i, n, threshold_gap, sampleno, settings, statlayer::StatsLayer)
-
     reset!(statlayer)
-    t = @elapsed ms = treelime(mysample, logsoft_model, extractor, schema)
+    t = @elapsed ms = treelime(dd, logsoft_model, extractor, schema)
     s = merge((
             name="treelime",
             pruning_method="treelime",
@@ -119,7 +128,7 @@ function add_treelime_experiment(exdf, dd, logsoft_model, i, n, threshold_gap, s
             task=settings.task,
             incarnation=settings.incarnation,
             inferences=statlayer.f,
-            gradients=statlayer.b,
+            gradients=statlayer.b
         ),
         stats(dd, ms, extractor, soft_model, i, concepts)
     )
