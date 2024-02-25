@@ -50,13 +50,13 @@ settings = parse_args(ARGS, _s; as_symbols=true)
 
 settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
-model_name = "nineteenth-feb-model.bson"
+model_name = "my-24-feb-model.bson"
 
 ###############################################################
 # start by loading all samples
 ###############################################################
 
-samples, labels, concepts = loaddata(settings)
+@time samples, labels, concepts = loaddata(settings)
 labels = vcat(labels, fill(2, length(concepts)))
 samples = vcat(samples, concepts)
 
@@ -74,7 +74,7 @@ else
     @save schema_file sch = sch
 end
 # sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
-if false# !isfile(resultsdir(model_name))
+if !isfile(resultsdir(model_name))
     !isdir(resultsdir()) && mkpath(resultsdir())
     @time extractor = suggestextractor(sch)
     trndata = extractbatch(extractor, samples)
@@ -94,7 +94,7 @@ if false# !isfile(resultsdir(model_name))
         # b = Dict("" => d -> Chain(Dense(d, settings.k, relu), Dense(settings.k, 2)))
     )
     model = @set model.m = Chain(model.m, Dense(settings.k, 2))
-    for i in 1:10
+    for i in 1:100
         @info "start of epoch $i"
         ###############################################################
         #  train
@@ -207,31 +207,28 @@ variants = vcat(
     collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:],
     collect(Iterators.product(["grad", "gnn", "gnn2", "banz"], vcat(heuristic)))[:],
 )
-ds = ds[1:min(numobs(ds), 3)]
-
-
-ExplainMill.DafExplainer()
+ds = ds[1:min(numobs(ds), 12)]
 exdf = DataFrame()
-numobs(ds)
-variants
+
 
 # if !isfile(resultsdir("stats_" * model_name))
 
-# for (name, pruning_method) in variants[1:2]
-#     e = getexplainer(name)
-#     @info "explainer $e on $name with $pruning_method"
-#     flush(stdout)
-#     for j in 1:numobs(ds)
-#         global exdf
-#         exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0, 0.1, name, pruning_method, j, settings, statlayer)
-#     end
-#     BSON.@save resultsdir("stats_" * model_name) exdf
-# end
-# for j in 1:numobs(ds)
-#     global exdf
-#     exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, 0, 0.1, j, settings, statlayer)
-#     BSON.@save resultsdir("stats_" * model_name) exdf
-# end
-exdf
+for (name, pruning_method) in variants[1:3]
+    e = getexplainer(name)
+    @info "explainer $e on $name with $pruning_method"
+    flush(stdout)
+    for j in 1:numobs(ds)
+        global exdf
+        exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0, 0.8, name, pruning_method, j, settings, statlayer)
+    end
+    BSON.@save resultsdir("stats_" * model_name) exdf
+end
+for j in 1:numobs(ds)
+    global exdf
+    exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, 0, j, settings, statlayer)
+    BSON.@save resultsdir("stats_" * model_name) exdf
+end
+
 
 t = @elapsed ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, 2, pruning_method=:Flat_Gadd, abs_tol=0.1)
+vscodedisplay(exdf)
