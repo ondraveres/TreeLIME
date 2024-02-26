@@ -1,6 +1,6 @@
 # for ((i=1;i<=20;i+=1)); do  for d in  one_of_1_2trees  one_of_1_5trees  one_of_1_paths  one_of_2_5trees  one_of_2_paths  one_of_5_paths ; do  julia -p 24 artificial.jl --dataset $d --incarnation $i ; done ; done
-@time using Pkg, ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, PrayTools, StatsBase, ExplainMill, Serialization, Setfield, DataFrames, HierarchicalUtils, Random, JLD2, GLMNet, Plots, Zygote
-@time using ExplainMill: jsondiff, nnodes, nleaves
+using Pkg, ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, PrayTools, StatsBase, ExplainMill, Serialization, Setfield, DataFrames, HierarchicalUtils, Random, JLD2, GLMNet, Plots, Zygote
+using ExplainMill: jsondiff, nnodes, nleaves
 try
     cd("/Users/ondrejveres/Diplomka/ExplainMill.jl/myscripts/datasets")
 catch
@@ -22,6 +22,7 @@ _s = ArgParseSettings()
     ("--incarnation"; default = 8; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
+exdf = DataFrame()
 
 settings = parse_args(ARGS, _s; as_symbols=true)
 
@@ -33,9 +34,9 @@ settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 # start by loading all samples
 ###############################################################
 
-@time samples, labels, concepts = loaddata(settings);
-labels = vcat(labels, fill(2, length(concepts)));
-samples = vcat(samples, concepts);
+samples, labels, concepts = loaddata(settings)
+labels = vcat(labels, fill(2, length(concepts)))
+samples = vcat(samples, concepts)
 
 resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...)
 ###############################################################
@@ -45,79 +46,79 @@ schema_file = resultsdir("schema.jdl2")
 global sch = nothing
 if isfile(schema_file)
     @info "Schema file exists, loading from file"
-    @time global sch = load(schema_file, "sch")
+    global sch = load(schema_file, "sch")
 else
     @info "Schema file does not exist, creating new schema"
     global sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
     @save schema_file sch = sch
 end
-exdf = DataFrame()
-for model_variant_k in [3, 4, 5, 6]
+
+for model_variant_k in [3, 4, 5]
     extractor = suggestextractor(sch)
     model_name = "my-24-feb-model-variant-$(model_variant_k).bson"
-    if !isfile(resultsdir(model_name))
-        !isdir(resultsdir()) && mkpath(resultsdir())
-        trndata = extractbatch(extractor, samples)
-        function makebatch()
-            i = rand(1:2000, 100)
-            trndata[i], Flux.onehotbatch(labels[i], 1:2)
-        end
-        ds = extractor(JsonGrinder.sample_synthetic(sch))
-        good_model, concept_gap = nothing, 0
-        random_useless = 10
-        # good_model, concept_gap
-        local model = reflectinmodel(
-            sch,
-            extractor,
-            d -> Dense(d, model_variant_k, relu),
-            all_imputing=true,
-            # b = Dict("" => d -> Chain(Dense(d, k, relu), Dense(k, 2)))
-        )
-        model = @set model.m = Chain(model.m, Dense(model_variant_k, 2))
-        for i in 1:100
-            @info "start of epoch $i"
-            ###############################################################
-            #  train
-            ###############################################################
-
-            opt = ADAM()
-            ps = Flux.params(model)
-            loss = (x, y) -> Flux.logitcrossentropy(model(x), y)
-            data_loader = Flux.DataLoader((trndata, Flux.onehotbatch(labels, 1:2)), batchsize=100, shuffle=true)
-
-
-            Flux.Optimise.train!(loss, ps, data_loader, opt)
-
-            soft_model = @set model.m = Chain(model.m, softmax)
-            cg = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), 2)[1, 1], concepts))
-            eg = ExplainMill.confidencegap(soft_model, extractor(JSON.parse("{}")), 1)[1, 1]
-            predictions = model(trndata)
-            accuracy(ds, y) = mean(Flux.onecold(model(ds)) .== y)
-            acc = mean(Flux.onecold(predictions) .== labels)
-            @info "crossentropy on all samples = ", Flux.logitcrossentropy(predictions, Flux.onehotbatch(labels, 1:2)),
-            @info "accuracy on all samples = ", acc
-            @info "minimum gap on concepts = $(cg) on empty sample = $(eg)"
-            @info "accuracy on concepts = $( accuracy(extractor.(concepts), 2)))"
-            @info "end of epoch $i"
-            flush(stdout)
-
-            mean(Flux.onecold(predictions) .== labels)
-
-            if (acc > 0.999)
-                break
-            end
-            # if cg > 0 && eg > 0
-            #     if cg > concept_gap
-            #         good_model, concept_gap = model, cg
-            #     end
-            # end
-            # concept_gap > 0.95 && break
-        end
-        if concept_gap < 0
-            error("Failed to train a model")
-        end
-        BSON.@save resultsdir(model_name) model extractor sch
+    # if !isfile(resultsdir(model_name))
+    #     !isdir(resultsdir()) && mkpath(resultsdir())
+    trndata = extractbatch(extractor, samples)
+    function makebatch()
+        i = rand(1:2000, 100)
+        trndata[i], Flux.onehotbatch(labels[i], 1:2)
     end
+    ds = extractor(JsonGrinder.sample_synthetic(sch))
+    good_model, concept_gap = nothing, 0
+    random_useless = 10
+    # good_model, concept_gap
+    model = reflectinmodel(
+        sch,
+        extractor,
+        d -> Dense(d, model_variant_k, relu),
+        all_imputing=true,
+        # b = Dict("" => d -> Chain(Dense(d, k, relu), Dense(k, 2)))
+    )
+    model = @set model.m = Chain(model.m, Dense(model_variant_k, 2))
+    for i in 1:2
+        @info "start of epoch $i"
+        ###############################################################
+        #  train
+        ###############################################################
+
+        opt = ADAM()
+        ps = Flux.params(model)
+        loss = (x, y) -> Flux.logitcrossentropy(model(x), y)
+        data_loader = Flux.DataLoader((trndata, Flux.onehotbatch(labels, 1:2)), batchsize=100, shuffle=true)
+
+
+        Flux.Optimise.train!(loss, ps, data_loader, opt)
+
+        soft_model = @set model.m = Chain(model.m, softmax)
+        cg = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), 2)[1, 1], concepts))
+        eg = ExplainMill.confidencegap(soft_model, extractor(JSON.parse("{}")), 1)[1, 1]
+        predictions = model(trndata)
+        accuracy(ds, y) = mean(Flux.onecold(model(ds)) .== y)
+        acc = mean(Flux.onecold(predictions) .== labels)
+        @info "crossentropy on all samples = ", Flux.logitcrossentropy(predictions, Flux.onehotbatch(labels, 1:2)),
+        @info "accuracy on all samples = ", acc
+        @info "minimum gap on concepts = $(cg) on empty sample = $(eg)"
+        @info "accuracy on concepts = $( accuracy(extractor.(concepts), 2)))"
+        @info "end of epoch $i"
+        flush(stdout)
+
+        mean(Flux.onecold(predictions) .== labels)
+
+        if (acc > 0.999)
+            break
+        end
+        # if cg > 0 && eg > 0
+        #     if cg > concept_gap
+        #         good_model, concept_gap = model, cg
+        #     end
+        # end
+        # concept_gap > 0.95 && break
+    end
+    if concept_gap < 0
+        error("Failed to train a model")
+    end
+    BSON.@save resultsdir(model_name) model extractor sch
+    # end
 
 
     d = BSON.load(resultsdir(model_name))
@@ -199,17 +200,17 @@ for model_variant_k in [3, 4, 5, 6]
         flush(stdout)
         for j in 1:numobs(ds)
             global exdf
-            exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0.9, name, pruning_method, j, settings, statlayer, model_variant_k)
+            exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0.9, name, pruning_method, j, settings, statlayer, model_variant_k, extractor)
         end
-        BSON.@save resultsdir("stats_" * model_name) exdf
+        BSON.@save resultsdir("triple_stats_" * model_name) exdf
     end
     for j in 1:numobs(ds)
         global exdf
-        exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k)
-        BSON.@save resultsdir("stats_" * model_name) exdf
+        exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, extractor)
+        BSON.@save resultsdir("triple_stats_" * model_name) exdf
     end
 
 
-    t = @elapsed ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, 2, pruning_method=:Flat_Gadd, abs_tol=0.1)
+    # t = @elapsed ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, 2, pruning_method=:Flat_Gadd, abs_tol=0.1)
 end
 vscodedisplay(exdf)
