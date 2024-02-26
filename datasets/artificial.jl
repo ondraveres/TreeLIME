@@ -213,7 +213,7 @@ exdf = DataFrame()
 
 # if !isfile(resultsdir("stats_" * model_name))
 
-for (name, pruning_method) in variants[1:3]
+for (name, pruning_method) in variants
     e = getexplainer(name)
     @info "explainer $e on $name with $pruning_method"
     flush(stdout)

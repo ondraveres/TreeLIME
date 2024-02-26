@@ -36,8 +36,6 @@ function stats(dd, ms, extractor, soft_model, i, concepts)
 end
 
 
-
-
 ###############################################################
 #  checking if experiment has been already done
 ###############################################################

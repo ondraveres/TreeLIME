@@ -22,10 +22,6 @@ function treelime(ds, model, extractor, schema)
 
     mean(flat_modification_masks)
 
-
-
-
-
     X = hcat(flat_modification_masks...)
     y = labels
 
