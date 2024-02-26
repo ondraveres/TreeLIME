@@ -72,9 +72,9 @@ Zygote.@adjoint function (s::StatsLayer)(x)
     x, Δ -> (nothing, Δ)
 end
 
-function addexperiment(exdf, e, dd, logsoft_model, i, name, pruning_method, sampleno, settings, statlayer::StatsLayer, k)
+function addexperiment(exdf, e, dd, logsoft_model, i, rel_tol, name, pruning_method, sampleno, settings, statlayer::StatsLayer, model_variant_k)
     reset!(statlayer)
-    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=0.9)
+    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
     s = merge((
             name=name,
             pruning_method=pruning_method,
@@ -85,14 +85,14 @@ function addexperiment(exdf, e, dd, logsoft_model, i, name, pruning_method, samp
             incarnation=settings.incarnation,
             inferences=statlayer.f,
             gradients=statlayer.b,
-            model_variant_k=k
+            model_variant_k=model_variant_k
         ),
         stats(dd, ms, extractor, soft_model, i, concepts)
     )
     vcat(exdf, DataFrame([s]))
 end
 
-function add_treelime_experiment(exdf, dd, logsoft_model, i, sampleno, settings, statlayer::StatsLayer, k)
+function add_treelime_experiment(exdf, dd, logsoft_model, i, sampleno, settings, statlayer::StatsLayer, model_variant_k)
     reset!(statlayer)
     t = @elapsed ms = treelime(dd, logsoft_model, extractor, schema)
     s = merge((
@@ -105,7 +105,7 @@ function add_treelime_experiment(exdf, dd, logsoft_model, i, sampleno, settings,
             incarnation=settings.incarnation,
             inferences=statlayer.f,
             gradients=statlayer.b,
-            model_variant_k=k
+            model_variant_k=model_variant_k
         ),
         stats(dd, ms, extractor, soft_model, i, concepts)
     )
