@@ -1,37 +1,16 @@
 # for ((i=1;i<=20;i+=1)); do  for d in  one_of_1_2trees  one_of_1_5trees  one_of_1_paths  one_of_2_5trees  one_of_2_paths  one_of_5_paths ; do  julia -p 24 artificial.jl --dataset $d --incarnation $i ; done ; done
-using Pkg
+@time using Pkg, ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, PrayTools, StatsBase, ExplainMill, Serialization, Setfield, DataFrames, HierarchicalUtils, Random, JLD2, GLMNet, Plots, Zygote
+@time using ExplainMill: jsondiff, nnodes, nleaves
 try
     cd("/Users/ondrejveres/Diplomka/ExplainMill.jl/myscripts/datasets")
 catch
     cd("/home/veresond/ExplainMill.jl/myscripts/datasets")
 end
 Pkg.activate("..")
-using ArgParse
-using Flux
-using Mill
-using JsonGrinder
-using JSON
-using BSON
-using Statistics
-using IterTools
-using PrayTools
-using StatsBase
-using ExplainMill
-using Serialization
-using Setfield
-using DataFrames
-using HierarchicalUtils
-using Random
-@time using JLD2
-@time using GLMNet
-@time using Plots
-@time using Zygote
-@time using ExplainMill: jsondiff, nnodes, nleaves;
 include("common.jl")
 include("loader.jl")
 include("stats.jl")
 include("treelime.jl")
-#using PrintTypesTersely;
 
 function mypredict(mymodel::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
     o = mapslices(x -> ikeyvalmap[argmax(x)], mymodel(ds), dims=1)
@@ -46,8 +25,6 @@ end
 
 settings = parse_args(ARGS, _s; as_symbols=true)
 
-
-
 settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
 model_name = "my-24-feb-model.bson"
@@ -56,7 +33,7 @@ model_name = "my-24-feb-model.bson"
 # start by loading all samples
 ###############################################################
 
-@time samples, labels, concepts = loaddata(settings)
+@time samples, labels, concepts = loaddata(settings);
 labels = vcat(labels, fill(2, length(concepts)))
 samples = vcat(samples, concepts)
 
@@ -73,6 +50,21 @@ else
     sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
     @save schema_file sch = sch
 end
+@time extractor = suggestextractor(sch)
+local model = reflectinmodel(
+    sch,
+    extractor,
+    d -> Dense(d, settings.k, relu),
+    all_imputing=true,
+    # b = Dict("" => d -> Chain(Dense(d, settings.k, relu), Dense(settings.k, 2)))
+)
+@which reflectinmodel(
+    sch,
+    extractor,
+    d -> Dense(d, settings.k, relu),
+    all_imputing=true,
+    # b = Dict("" => d -> Chain(Dense(d, settings.k, relu), Dense(settings.k, 2)))
+)
 # sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
 if !isfile(resultsdir(model_name))
     !isdir(resultsdir()) && mkpath(resultsdir())
@@ -219,13 +211,13 @@ for (name, pruning_method) in variants
     flush(stdout)
     for j in 1:numobs(ds)
         global exdf
-        exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0, 0.8, name, pruning_method, j, settings, statlayer)
+        exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0.8, name, pruning_method, j, settings, statlayer)
     end
     BSON.@save resultsdir("stats_" * model_name) exdf
 end
 for j in 1:numobs(ds)
     global exdf
-    exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, 0, j, settings, statlayer)
+    exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer)
     BSON.@save resultsdir("stats_" * model_name) exdf
 end
 
