@@ -1,2 +1,5 @@
 *.so
 *.jld2
+
+.DS_Store
+*.bson

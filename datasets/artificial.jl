@@ -22,7 +22,7 @@ _s = ArgParseSettings()
     ("--incarnation"; default = 8; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
-exdf = DataFrame()
+
 
 settings = parse_args(ARGS, _s; as_symbols=true)
 
@@ -52,12 +52,13 @@ else
     global sch = JsonGrinder.schema(vcat(samples, concepts, Dict()))
     @save schema_file sch = sch
 end
+exdf = DataFrame()
 
-for model_variant_k in [3, 4, 5]
-    extractor = suggestextractor(sch)
-    model_name = "my-24-feb-model-variant-$(model_variant_k).bson"
-    # if !isfile(resultsdir(model_name))
-    #     !isdir(resultsdir()) && mkpath(resultsdir())
+extractor = suggestextractor(sch)
+model_variant_k = 3
+model_name = "my-24-feb-model-variant-$(model_variant_k).bson"
+if !isfile(resultsdir(model_name))
+    !isdir(resultsdir()) && mkpath(resultsdir())
     trndata = extractbatch(extractor, samples)
     function makebatch()
         i = rand(1:2000, 100)
@@ -75,7 +76,7 @@ for model_variant_k in [3, 4, 5]
         # b = Dict("" => d -> Chain(Dense(d, k, relu), Dense(k, 2)))
     )
     model = @set model.m = Chain(model.m, Dense(model_variant_k, 2))
-    for i in 1:2
+    for i in 1:100
         @info "start of epoch $i"
         ###############################################################
         #  train
@@ -118,11 +119,11 @@ for model_variant_k in [3, 4, 5]
         error("Failed to train a model")
     end
     BSON.@save resultsdir(model_name) model extractor sch
-    # end
-
-
+end
+for model_variant_k in [3, 4, 5]
+    model_name = "my-24-feb-model-variant-$(model_variant_k).bson"
     d = BSON.load(resultsdir(model_name))
-    # (model, extractor, sch) = d[:model], d[:extractor], d[:sch]
+    (model, extractor, sch) = d[:model], d[:extractor], d[:sch]
     statlayer = StatsLayer()
 
     model = @set model.m = Chain(model.m, statlayer)
@@ -188,13 +189,13 @@ for model_variant_k in [3, 4, 5]
         collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:],
         collect(Iterators.product(["grad", "gnn", "gnn2", "banz"], vcat(heuristic)))[:],
     )
-    ds = ds[1:min(numobs(ds), 3)]
-
-
+    ds = ds[1:min(numobs(ds), 100)]
 
     # if !isfile(resultsdir("stats_" * model_name))
+    collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:]
+    print(variants)
 
-    for (name, pruning_method) in variants[1:3]
+    for (name, pruning_method) in variants
         e = getexplainer(name)
         @info "explainer $e on $name with $pruning_method"
         flush(stdout)
@@ -209,8 +210,20 @@ for model_variant_k in [3, 4, 5]
         exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, extractor)
         BSON.@save resultsdir("triple_stats_" * model_name) exdf
     end
-
-
     # t = @elapsed ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, 2, pruning_method=:Flat_Gadd, abs_tol=0.1)
 end
 vscodedisplay(exdf)
+@save "stability_data.bson" exdf
+
+using DataFrames
+grouped_df = DataFrames.groupby(exdf, [:name, :pruning_method, :sampleno, :incarnation])
+
+exdf
+collect(grouped_df)
+vscodedisplay(collect(grouped_df)[1])
+
+@load "stability_data.bson" exdf
+
+exdf2 = DataFrame(exdf)
+
+vscodedisplay(exdf2)
