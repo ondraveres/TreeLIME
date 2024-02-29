@@ -221,6 +221,20 @@ end
 exdf2 = DataFrame(exdf)
 
 
+function dice_coefficient(a, b)
+    size_a = nnodes(a)
+    size_b = nnodes(b)
+    ce = jsondiff(a, b)
+    ec = jsondiff(b, a)
+
+    misses_nodes = nnodes(ce)
+    excess_nodes = nnodes(ec)
+
+    dc = 2 * (size_a + size_b - misses_nodes - excess_nodes) / (size_a + size_b)
+    return dc
+end
+
+
 grouped_df = DataFrames.groupby(exdf, [:name, :pruning_method, :sampleno, :incarnation])
 
 json_string1 = collect(grouped_df)[1][!, :explanation_json][1]
@@ -231,12 +245,17 @@ dict1 = JSON.parse(json_string1)
 dict2 = JSON.parse(json_string2)
 dict3 = JSON.parse(json_string3)
 
-ce = jsondiff(dict1, dict3)
-ec = jsondiff(dict3, dict1)
+ce = jsondiff(dict1, dict2)
+ec = jsondiff(dict2, dict1)
 
 misses_nodes = nnodes(ce)
 excess_nodes = nnodes(ec)
 length([])
 
 nnodes(dict1)
-nnodes(dict3)
+nnodes(dict2)
+
+dice_coefficient(dict1, dict3)
+
+dict1
+dict2
