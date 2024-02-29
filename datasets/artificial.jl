@@ -1,6 +1,7 @@
 # for ((i=1;i<=20;i+=1)); do  for d in  one_of_1_2trees  one_of_1_5trees  one_of_1_paths  one_of_2_5trees  one_of_2_paths  one_of_5_paths ; do  julia -p 24 artificial.jl --dataset $d --incarnation $i ; done ; done
 using Pkg, ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, PrayTools, StatsBase, ExplainMill, Serialization, Setfield, DataFrames, HierarchicalUtils, Random, JLD2, GLMNet, Plots, Zygote
 using ExplainMill: jsondiff, nnodes, nleaves
+
 try
     cd("/Users/ondrejveres/Diplomka/ExplainMill.jl/myscripts/datasets")
 catch
@@ -120,7 +121,7 @@ if !isfile(resultsdir(model_name))
     end
     BSON.@save resultsdir(model_name) model extractor sch
 end
-for model_variant_k in [3, 4, 5]
+for model_variant_k in []#[3, 4, 5]
     model_name = "my-24-feb-model-variant-$(model_variant_k).bson"
     d = BSON.load(resultsdir(model_name))
     (model, extractor, sch) = d[:model], d[:extractor], d[:sch]
@@ -212,18 +213,30 @@ for model_variant_k in [3, 4, 5]
     end
     # t = @elapsed ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, 2, pruning_method=:Flat_Gadd, abs_tol=0.1)
 end
-vscodedisplay(exdf)
-@save "stability_data.bson" exdf
-
-using DataFrames
-grouped_df = DataFrames.groupby(exdf, [:name, :pruning_method, :sampleno, :incarnation])
-
-exdf
-collect(grouped_df)
-vscodedisplay(collect(grouped_df)[1])
+# vscodedisplay(exdf)
+# @save "stability_data.bson" exdf
 
 @load "stability_data.bson" exdf
 
 exdf2 = DataFrame(exdf)
 
-vscodedisplay(exdf2)
+
+grouped_df = DataFrames.groupby(exdf, [:name, :pruning_method, :sampleno, :incarnation])
+
+json_string1 = collect(grouped_df)[1][!, :explanation_json][1]
+json_string2 = collect(grouped_df)[1][!, :explanation_json][2]
+json_string3 = collect(grouped_df)[1][!, :explanation_json][3]
+
+dict1 = JSON.parse(json_string1)
+dict2 = JSON.parse(json_string2)
+dict3 = JSON.parse(json_string3)
+
+ce = jsondiff(dict1, dict3)
+ec = jsondiff(dict3, dict1)
+
+misses_nodes = nnodes(ce)
+excess_nodes = nnodes(ec)
+length([])
+
+nnodes(dict1)
+nnodes(dict3)
