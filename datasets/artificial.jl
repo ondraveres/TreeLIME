@@ -8,10 +8,10 @@ catch
     cd("/home/veresond/ExplainMill.jl/myscripts/datasets")
 end
 Pkg.activate("..")
+include("treelime.jl")
 include("common.jl")
 include("loader.jl")
 include("stats.jl")
-include("treelime.jl")
 
 function mypredict(mymodel::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
     o = mapslices(x -> ikeyvalmap[argmax(x)], mymodel(ds), dims=1)
@@ -220,6 +220,7 @@ end
 
 exdf2 = DataFrame(exdf)
 
+vscodedisplay(exdf2)
 
 function dice_coefficient(a, b)
     size_a = nnodes(a)
@@ -255,7 +256,45 @@ length([])
 nnodes(dict1)
 nnodes(dict2)
 
-dice_coefficient(dict1, dict3)
+
 
 dict1
 dict2
+
+dice_coefficient(dict1, dict3)
+
+dfs = collect(grouped_df)
+for df in dfs
+
+
+end
+
+
+
+
+function average_operation(jsons)
+    total = 0
+    count = 0
+
+    for i in 1:length(jsons)
+        for j in i+1:length(jsons)
+            total += dice_coefficient(jsons[i], jsons[j])
+            count += 1
+        end
+    end
+
+    return total / count
+end
+
+
+dice_coefficients = DataFrame()
+for df in dfs
+    jsons = map(JSON.parse, df[!, :explanation_json])
+    average_dice = average_operation(jsons)
+    new_row = df[1, [:name, :pruning_method, :sampleno, :incarnation]]
+    new_df = merge((name=df[1, "name"], hi=2))
+    vcat(dice_coefficients, DataFrame([new_df]))
+end
+
+
+
