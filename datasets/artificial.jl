@@ -287,14 +287,17 @@ function average_operation(jsons)
 end
 
 
-dice_coefficients = DataFrame()
+dice_coefficients = DataFrame(name=String[], pruning_method=String[], average_dice=Float16[])
 for df in dfs
     jsons = map(JSON.parse, df[!, :explanation_json])
     average_dice = average_operation(jsons)
-    new_row = df[1, [:name, :pruning_method, :sampleno, :incarnation]]
-    new_df = merge((name=df[1, "name"], hi=2))
-    vcat(dice_coefficients, DataFrame([new_df]))
+    push!(dice_coefficients, (name=df[1, "name"], pruning_method=string(df[1, "pruning_method"]), average_dice=average_dice))
 end
+dfs[1][1, "pruning_method"]
+
+average_df = combine(DataFrames.groupby(dice_coefficients, [:name, :pruning_method]), :average_dice => mean => :average_dice)
+
+vscodedisplay(average_df)
 
 
 
