@@ -1,6 +1,34 @@
 using Random
 using JsonGrinder: is_intable, is_floatable, unify_types, extractscalar
 
+function loadclass(k, n=typemax(Int))
+    dss = map(s -> extractor(s, store_input=true), sample(samples[my_class_indexes[k]], min(n, length(my_class_indexes[k])), replace=false))
+    reduce(catobs, dss)
+end
+
+
+function onlycorrect(dss, i, min_confidence=0)
+    correct = mypredict(soft_model, dss, [1, 2]) .== i
+    dss = dss[correct[:]]
+    min_confidence == 0 && return (dss)
+    correct = ExplainMill.confidencegap(soft_model, dss, i) .>= min_confidence
+    dss[correct[:]]
+end
+
+function getexplainer(name)
+    if name == "stochastic"
+        return ExplainMill.StochasticExplainer()
+    elseif name == "grad"
+        return ExplainMill.GradExplainer2()
+    elseif name == "gnn"
+        return ExplainMill.GnnExplainer()
+    elseif name == "banz"
+        return ExplainMill.DafExplainer()
+    else
+        error("unknown eplainer $name")
+    end
+end
+
 function scalar_extractor()
     [(e -> length(keys(e)) <= 100,
             e -> ExtractCategorical(keys(e))),
