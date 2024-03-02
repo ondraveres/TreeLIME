@@ -121,7 +121,7 @@ if !isfile(resultsdir(model_name))
     end
     BSON.@save resultsdir(model_name) model extractor sch
 end
-for model_variant_k in []#[3, 4, 5]
+for model_variant_k in [3, 4, 5]
     model_name = "my-24-feb-model-variant-$(model_variant_k).bson"
     d = BSON.load(resultsdir(model_name))
     (model, extractor, sch) = d[:model], d[:extractor], d[:sch]
@@ -196,16 +196,16 @@ for model_variant_k in []#[3, 4, 5]
     collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:]
     print(variants)
 
-    for (name, pruning_method) in variants
-        e = getexplainer(name)
-        @info "explainer $e on $name with $pruning_method"
-        flush(stdout)
-        for j in 1:numobs(ds)
-            global exdf
-            exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0.9, name, pruning_method, j, settings, statlayer, model_variant_k, extractor)
-        end
-        BSON.@save resultsdir("triple_stats_" * model_name) exdf
-    end
+    # for (name, pruning_method) in variants
+    #     e = getexplainer(name)
+    #     @info "explainer $e on $name with $pruning_method"
+    #     flush(stdout)
+    #     for j in 1:numobs(ds)
+    #         global exdf
+    #         exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0.9, name, pruning_method, j, settings, statlayer, model_variant_k, extractor)
+    #     end
+    #     BSON.@save resultsdir("triple_stats_" * model_name) exdf
+    # end
     for j in 1:numobs(ds)
         global exdf
         exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, extractor)
@@ -215,89 +215,4 @@ for model_variant_k in []#[3, 4, 5]
 end
 # vscodedisplay(exdf)
 # @save "stability_data.bson" exdf
-
-@load "stability_data.bson" exdf
-
-exdf2 = DataFrame(exdf)
-
-vscodedisplay(exdf2)
-
-function dice_coefficient(a, b)
-    size_a = nnodes(a)
-    size_b = nnodes(b)
-    ce = jsondiff(a, b)
-    ec = jsondiff(b, a)
-
-    misses_nodes = nnodes(ce)
-    excess_nodes = nnodes(ec)
-
-    dc = 2 * (size_a + size_b - misses_nodes - excess_nodes) / (size_a + size_b)
-    return dc
-end
-
-
-grouped_df = DataFrames.groupby(exdf, [:name, :pruning_method, :sampleno, :incarnation])
-
-json_string1 = collect(grouped_df)[1][!, :explanation_json][1]
-json_string2 = collect(grouped_df)[1][!, :explanation_json][2]
-json_string3 = collect(grouped_df)[1][!, :explanation_json][3]
-
-dict1 = JSON.parse(json_string1)
-dict2 = JSON.parse(json_string2)
-dict3 = JSON.parse(json_string3)
-
-ce = jsondiff(dict1, dict2)
-ec = jsondiff(dict2, dict1)
-
-misses_nodes = nnodes(ce)
-excess_nodes = nnodes(ec)
-length([])
-
-nnodes(dict1)
-nnodes(dict2)
-
-
-
-dict1
-dict2
-
-dice_coefficient(dict1, dict3)
-
-dfs = collect(grouped_df)
-for df in dfs
-
-
-end
-
-
-
-
-function average_operation(jsons)
-    total = 0
-    count = 0
-
-    for i in 1:length(jsons)
-        for j in i+1:length(jsons)
-            total += dice_coefficient(jsons[i], jsons[j])
-            count += 1
-        end
-    end
-
-    return total / count
-end
-
-
-dice_coefficients = DataFrame(name=String[], pruning_method=String[], average_dice=Float16[])
-for df in dfs
-    jsons = map(JSON.parse, df[!, :explanation_json])
-    average_dice = average_operation(jsons)
-    push!(dice_coefficients, (name=df[1, "name"], pruning_method=string(df[1, "pruning_method"]), average_dice=average_dice))
-end
-dfs[1][1, "pruning_method"]
-
-average_df = combine(DataFrames.groupby(dice_coefficients, [:name, :pruning_method]), :average_dice => mean => :average_dice)
-
-vscodedisplay(average_df)
-
-
 
