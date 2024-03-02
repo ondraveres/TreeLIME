@@ -13,9 +13,7 @@ include("common.jl")
 include("loader.jl")
 include("stats.jl")
 
-function mypredict(mymodel::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
-    o = mapslices(x -> ikeyvalmap[argmax(x)], mymodel(ds), dims=1)
-end
+
 _s = ArgParseSettings()
 @add_arg_table! _s begin
     ("--dataset"; default = "mutagenesis"; arg_type = String)
@@ -56,7 +54,7 @@ end
 
 exdf = DataFrame()
 extractor = suggestextractor(sch)
-stats_filename = "two__three_stability_data.bson"
+stats_filename = "stability_data3.bson"
 if !isfile(resultsdir(stats_filename))
     for model_variant_k in k_variants
         global extractor
@@ -116,12 +114,12 @@ if !isfile(resultsdir(stats_filename))
         my_class_indexes = PrayTools.classindexes(labels)
         Random.seed!(settings.incarnation)
         strain = 2
-        ds = loadclass(strain, 3)
+        ds = loadclass(strain, my_class_indexes, 3)
         i = strain
         concept_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], concepts))
         sample_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], samples[labels.==2]))
         threshold_gap = 0.2
-        correct_ds = onlycorrect(ds, strain, 0.1)
+        correct_ds = onlycorrect(ds, strain, soft_model, 0.1)
         ds = correct_ds
         @info "minimum gap on concepts = $(concept_gap) on samples = $(sample_gap)"
 

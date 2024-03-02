@@ -1,13 +1,7 @@
 using Random
 using JsonGrinder: is_intable, is_floatable, unify_types, extractscalar
 
-function loadclass(k, n=typemax(Int))
-    dss = map(s -> extractor(s, store_input=true), sample(samples[my_class_indexes[k]], min(n, length(my_class_indexes[k])), replace=false))
-    reduce(catobs, dss)
-end
-
-
-function onlycorrect(dss, i, min_confidence=0)
+function onlycorrect(dss, i, soft_model, min_confidence=0)
     correct = mypredict(soft_model, dss, [1, 2]) .== i
     dss = dss[correct[:]]
     min_confidence == 0 && return (dss)
@@ -28,6 +22,15 @@ function getexplainer(name)
         error("unknown eplainer $name")
     end
 end
+function loadclass(k, my_class_indexes, n=typemax(Int))
+    dss = map(s -> extractor(s, store_input=true), sample(samples[my_class_indexes[k]], min(n, length(my_class_indexes[k])), replace=false))
+    reduce(catobs, dss)
+end
+
+function mypredict(mymodel::Mill.AbstractMillModel, ds::Mill.AbstractMillNode, ikeyvalmap)
+    o = mapslices(x -> ikeyvalmap[argmax(x)], mymodel(ds), dims=1)
+end
+
 
 function scalar_extractor()
     [(e -> length(keys(e)) <= 100,
