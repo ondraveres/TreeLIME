@@ -56,8 +56,8 @@ end
 
 exdf = DataFrame()
 extractor = suggestextractor(sch)
-stats_filename = "stats_" * model_name
-if !isfile(resultsdir("stats_" * model_name))
+stats_filename = "two__three_stability_data.bson"
+if !isfile(resultsdir(stats_filename))
 for model_variant_k in k_variants
     # model_variant_k = 5
     model_name = "my-2-march-model-variant-$(model_variant_k).bson"
@@ -147,7 +147,7 @@ for model_variant_k in k_variants
         exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, extractor)
     end
 end
-@save resultsdir("two__three_stability_data.bson") exdf
+@save resultsdir(stats_filename) exdf
 
 # add_treelime_experiment(exdf, ds[1], logsoft_model, 2, 1, settings, statlayer, model_variant_k, extractor)
 
