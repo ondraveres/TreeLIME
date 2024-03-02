@@ -3,6 +3,7 @@ function stats(dd, ms, extractor, soft_model, i, concepts)
     gap = ExplainMill.confidencegap(soft_model, dd[ms], i)
     fv = ExplainMill.FlatView(ms)
     logical = ExplainMill.e2boolean(dd, ms, extractor)
+    println("explanation size $(nnodes(logical))")
     original_confidence_gap = ExplainMill.confidencegap(soft_model, dd, i)
     explanation_confidence_gap = ExplainMill.confidencegap(soft_model, dd[ms], i)
 

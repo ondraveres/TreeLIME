@@ -44,17 +44,18 @@ function treelime(ds, model, extractor, schema)
 
     non_zero_indices = findall(x -> abs(x) > 0, coef)
 
+
     y_pred = GLMNet.predict(cv, Xmatrix)
     y_pred_labels = ifelse.(y_pred .>= 0.5, 2, 1)
     my_accuracy = mean(y_pred_labels .== yvector)
 
-    println("Accuracy: $my_accuracy")
+    println("Accuracy: $my_accuracy, Non-zero indexes: $(length(non_zero_indices))")
 
 
-    leafmap!(mask) do mask_node
-        mask_node.mask.x .= false
-        return mask_node
-    end
+    # leafmap!(mask) do mask_node
+    #     mask_node.mask.x .= false
+    #     return mask_node
+    # end
 
     new_flat_view = ExplainMill.FlatView(mask)
     new_flat_view[non_zero_indices] = true
@@ -148,7 +149,6 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
             end
             return new_array_node, mask_node
         end
-        @error ExplainMill.CategoricalMask
         return ArrayNode(Mill.data(data_node), data_node.metadata), mask_node
     end
 end
