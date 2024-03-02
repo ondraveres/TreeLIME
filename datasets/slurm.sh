@@ -7,5 +7,5 @@ echo Hello
 sleep 10
 echo Starting
 
-module load Julia/1.9.3-linux-x86_64
-stdbuf -o0 -e0 /mnt/appl/software/Julia/1.9.3-linux-x86_64/bin/julia  --color=no -O3 artificial.jl --dataset $1 --task $2 --incarnation $3 #-i $SLURM_ARRAY_TASK_ID
+module load Julia
+stdbuf -o0 -e0 julia  --color=no -O3 artificial.jl --dataset $1 --task $2 --incarnation $3 #-i $SLURM_ARRAY_TASK_ID

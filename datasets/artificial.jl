@@ -1,13 +1,14 @@
 # for ((i=1;i<=20;i+=1)); do  for d in  one_of_1_2trees  one_of_1_5trees  one_of_1_paths  one_of_2_5trees  one_of_2_paths  one_of_5_paths ; do  julia -p 24 artificial.jl --dataset $d --incarnation $i ; done ; done
-using Pkg, ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, PrayTools, StatsBase, ExplainMill, Serialization, Setfield, DataFrames, HierarchicalUtils, Random, JLD2, GLMNet, Plots, Zygote
-using ExplainMill: jsondiff, nnodes, nleaves
-
 try
     cd("/Users/ondrejveres/Diplomka/ExplainMill.jl/myscripts/datasets")
 catch
     cd("/home/veresond/ExplainMill.jl/myscripts/datasets")
 end
+using Pkg
 Pkg.activate("..")
+using ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, PrayTools, StatsBase, ExplainMill, Serialization, Setfield, DataFrames, HierarchicalUtils, Random, JLD2, GLMNet, Plots, Zygote
+using ExplainMill: jsondiff, nnodes, nleaves
+
 include("treelime.jl")
 include("common.jl")
 include("loader.jl")
@@ -24,9 +25,9 @@ end
 settings = parse_args(ARGS, _s; as_symbols=true)
 settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
-sample_num = 2
-iter_count = 2
-k_variants = [3]
+sample_num = 20
+iter_count = 50
+k_variants = [3, 4, 5]
 
 
 ###############################################################
