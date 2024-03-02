@@ -44,7 +44,7 @@ resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settin
 # create schema of the JSON
 ###############################################################
 schema_file = resultsdir("schema.jdl2")
-global sch = nothing
+sch = nothing
 if isfile(schema_file)
     @info "Schema file exists, loading from file"
     global sch = load(schema_file, "sch")
@@ -59,7 +59,8 @@ extractor = suggestextractor(sch)
 stats_filename = "two__three_stability_data.bson"
 if !isfile(resultsdir(stats_filename))
     for model_variant_k in k_variants
-        # model_variant_k = 5
+        global extractor
+        global sch
         model_name = "my-2-march-model-variant-$(model_variant_k).bson"
         if !isfile(resultsdir(model_name))
             !isdir(resultsdir()) && mkpath(resultsdir())
