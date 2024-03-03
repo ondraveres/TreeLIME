@@ -37,6 +37,7 @@ k_variants = [3, 4, 5]
 samples, labels, concepts = loaddata(settings)
 labels = vcat(labels, fill(2, length(concepts)))
 samples = vcat(samples, concepts)
+stats_filename = "stability_data3.bson"
 
 resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...)
 ###############################################################
@@ -55,7 +56,6 @@ end
 
 exdf = DataFrame()
 extractor = suggestextractor(sch)
-stats_filename = "stability_data3.bson"
 if !isfile(resultsdir(stats_filename))
     for model_variant_k in k_variants
         global extractor
@@ -115,7 +115,7 @@ if !isfile(resultsdir(stats_filename))
         my_class_indexes = PrayTools.classindexes(labels)
         Random.seed!(settings.incarnation)
         strain = 2
-        ds = loadclass(strain, my_class_indexes, 3)
+        ds = loadclass(strain, my_class_indexes, sample_num)
         i = strain
         concept_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], concepts))
         sample_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], samples[labels.==2]))
@@ -147,7 +147,7 @@ if !isfile(resultsdir(stats_filename))
             exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, extractor)
         end
     end
-    @save resultsdir(stats_filename) exdf
+    BSON.@save resultsdir(stats_filename) exdf
 end
 
 # add_treelime_experiment(exdf, ds[1], logsoft_model, 2, 1, settings, statlayer, model_variant_k, extractor)

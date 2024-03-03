@@ -5,7 +5,7 @@ catch
     cd("/home/veresond/ExplainMill.jl/myscripts/datasets")
 end
 Pkg.activate("..")
-using DataFrames, Statistics, Serialization, PrettyTables, Printf, HypothesisTests, CSV, CodecZlib, BSON
+using DataFrames, Statistics, Serialization, PrettyTables, Printf, HypothesisTests, CSV, CodecZlib, BSON, JLD2
 
 srcdir = "../../data/sims/"
 misses = 0
@@ -18,7 +18,10 @@ function loadstats(p, filename)
         return (DataFrame())
     end
     global hits += 1
-    BSON.load(joinpath(srcdir, p, filename))[:exdf]
+    @info "paths is $(joinpath(srcdir, p, filename))"
+    # BSON.load(joinpath(srcdir, p, filename))[:exdf]
+    @load joinpath(srcdir, p, filename) exdf #for jdl2
+    return exdf
 end
 
 function meanandconfidence(x)
@@ -45,7 +48,7 @@ function filtercase(df, ranking::Nothing, level_by_level)
     exportcase(df, pms, level_by_level)
 end
 function filter_treelime(df)
-    df[!, :pruning_method] .= String.(df[!, :pruning_method])
+    df[:, :pruning_method] .= String.(df[:, :pruning_method])
     pms = ["treelime"]
     df = filter(r -> r.pruning_method ∈ pms, df)
     exportcase(df, pms, "treelime", "treelime")
@@ -84,25 +87,28 @@ end
 ####
 misses = 0
 hits = 0
-["deviceid", "hepatitis"]
 df = mapreduce(vcat, ["mutagenesis", "deviceid", "hepatitis"]) do problem
     mapreduce(vcat, readdir(joinpath(srcdir, problem))) do task
         mapreduce(vcat, readdir(joinpath(srcdir, problem, task))) do i
-            loadstats(joinpath(problem, task, i), "stats_my-24-feb-model.bson")
+            loadstats(joinpath(problem, task, i), "stability_data3.bson")
         end
     end
 end
 misses
 hits
 
+df
+
+
 hits / (hits + misses)
+vscodedisplay(df)
 mytreelime = filter_treelime(df)
 
 function maketable(df)
     vcat(
         mapreduce(vcat, [false, true]) do b
             uninformative = filtercase(df, nothing, b)
-            heuristic = mapreduce(r -> filtercase(df, r, b), vcat, ["gnn", "gnn2", "grad", "banz", "stochastic"])
+            heuristic = mapreduce(r -> filtercase(df, r, b), vcat, ["gnn", "grad", "banz", "stochastic"])
             vcat(uninformative, heuristic)
         end,
         filter_treelime(df)
