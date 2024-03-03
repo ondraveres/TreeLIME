@@ -9,6 +9,13 @@ Pkg.activate("..")
 using ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, PrayTools, StatsBase, ExplainMill, Serialization, Setfield, DataFrames, HierarchicalUtils, Random, JLD2, GLMNet, Plots, Zygote
 using ExplainMill: jsondiff, nnodes, nleaves
 
+
+sample_num = 20
+iter_count = 50
+k_variants = [3, 4, 5]
+stats_filename = "stability_data4.bson"
+
+
 include("treelime.jl")
 include("common.jl")
 include("loader.jl")
@@ -25,9 +32,6 @@ end
 settings = parse_args(ARGS, _s; as_symbols=true)
 settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
-sample_num = 20
-iter_count = 50
-k_variants = [3, 4, 5]
 
 
 ###############################################################
@@ -37,7 +41,6 @@ k_variants = [3, 4, 5]
 samples, labels, concepts = loaddata(settings)
 labels = vcat(labels, fill(2, length(concepts)))
 samples = vcat(samples, concepts)
-stats_filename = "stability_data3.bson"
 
 resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...)
 ###############################################################

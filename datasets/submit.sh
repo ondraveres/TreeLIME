@@ -6,7 +6,7 @@ for d in mutagenesis hepatitis deviceid; do
         for c in `ls ../../data/raw/${d}/${t} | grep concept`; do 
             if [ $counter -le 100 ]; then
                 echo "test"
-            end
+            fi
             i=${c##*/}
             i=${c%_concept.jsonl}
             sbatch -J ${d}_${t}_${i} -D ${PWD} slurm.sh $d $t $i
