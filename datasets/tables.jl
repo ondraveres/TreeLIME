@@ -99,6 +99,8 @@ hits
 
 df
 
+BSON.@save "merged_data.bson" df
+
 
 hits / (hits + misses)
 vscodedisplay(df)
