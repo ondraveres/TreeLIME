@@ -1,15 +1,20 @@
 using Pkg
+try
+  cd("/Users/ondrejveres/Diplomka/ExplainMill.jl/myscripts/cuckoo")
+catch
+  cd("/home/veresond/ExplainMill.jl/myscripts/cuckoo")
+end
 Pkg.activate("..")
 using Flux, Mill, JsonGrinder, ArgParse, Setfield, Serialization, ExplainMill, DataFrames, BSON
-using Mill: nobs
+using Mill: numobs
 
 include("common.jl")
 
 _s = ArgParseSettings()
 @add_arg_table! _s begin
-  ("--name"; default="banz";arg_type=String);
-  ("--pruning_method"; default="LbyL_HArr";arg_type=String);
-  ("-i"; default=1;arg_type=Int);
+  ("--name"; default = "banz"; arg_type = String)
+  ("--pruning_method"; default = "LbyL_HArr"; arg_type = String)
+  ("-i"; default = 1; arg_type = Int)
 end
 
 settings = parse_args(ARGS, _s; as_symbols=true)
@@ -22,9 +27,9 @@ model = smodel.m;
 
 model = f32(@set model.m.m = Chain(model.m.m, smodel.severity));
 statlayer = StatsLayer()
-model = @set model.m.m = Chain(model.m.m...,  statlayer);
-soft_model = @set model.m.m = Chain(model.m.m...,  softmax);
-logsoft_model = @set model.m.m = Chain(model.m.m...,  logsoftmax);
+model = @set model.m.m = Chain(model.m.m..., statlayer);
+soft_model = @set model.m.m = Chain(model.m.m..., softmax);
+logsoft_model = @set model.m.m = Chain(model.m.m..., logsoftmax);
 
 name, pruning_method = settings[:name], Symbol(settings[:pruning_method])
 e, n = getexplainer(name)
@@ -43,5 +48,5 @@ r = samplesizes[settings[:i], :]
 ds = ff32(deserialize(modeldir(r.filename))[r.j]);
 i = Int(startswith(r.filename, "extracted_mal")) + 1
 gap = ExplainMill.confidencegap(soft_model, ds, i)
-exdf = addexperiment(DataFrame(), e, ds, logsoft_model, i, n, 0.9*gap, name, pruning_method, merge(settings, (sampleno = r.j, filename = r.filename)), statlayer)
+exdf = addexperiment(DataFrame(), e, ds, logsoft_model, i, n, 0.9 * gap, name, pruning_method, merge(settings, (sampleno=r.j, filename=r.filename)), statlayer)
 BSON.@save "stats/$(name)_$(pruning_method)_$(settings[:i]).bson" exdf

@@ -1,4 +1,10 @@
+try
+    cd("/Users/ondrejveres/Diplomka/ExplainMill.jl/myscripts/cape")
+catch
+    cd("/home/veresond/ExplainMill.jl/myscripts/cape")
+end
 using Pkg
+Pkg.activate("..")
 
 using Flux, MLDataPattern, Mill, JsonGrinder, JSON, Statistics, IterTools, StatsBase, ThreadTools
 using JsonGrinder: suggestextractor, ExtractDict
@@ -31,9 +37,9 @@ index2017 = findfirst(j -> j[1] == "2017-01", month_counts)
 previous_months = sum(map(j -> j[2], month_counts[1:index2017-1]))
 month_counts[index2017] = Pair("≤" * month_counts[index2017][1], month_counts[index2017][2] + previous_months)
 deleteat!(month_counts, 1:64)
-bar(getindex.(month_counts, 2), xticks=(1:length(month_counts), getindex.(month_counts, 1)), xtickfontsize=5, ytickfontsize=5, xrotation=45, yguidefontsize=8, xguidefontsize=8, legend=false,
-    xlabel="Month and year of the first evidence of a sample", ylabel="Number of samples for each month", size=(900, 400),
-    left_margin=5Plots.mm, bottom_margin=10Plots.mm)
+# bar(getindex.(month_counts, 2), xticks=(1:length(month_counts), getindex.(month_counts, 1)), xtickfontsize=5, ytickfontsize=5, xrotation=45, yguidefontsize=8, xguidefontsize=8, legend=false,
+#     xlabel="Month and year of the first evidence of a sample", ylabel="Number of samples for each month", size=(900, 400),
+#     left_margin=5Plots.mm, bottom_margin=10Plots.mm)
 
 
 timesplit = Date(2019, 8, 1)
@@ -61,13 +67,11 @@ sch_parts = tmap(chunks) do ch
     JsonGrinder.schema(jsons[ch])
 end
 time_split_complete_schema = merge(sch_parts...)
-printtree(time_split_complete_schema)
+# printtree(time_split_complete_schema)
 
 extractor = suggestextractor(time_split_complete_schema)
 data = tmap(extractor, jsons);
-@save "extractedCapeData.jld2" data
 
-@load "extractedCapeData.jld2" data
 
 labelnames = sort(unique(df_labels.classification_family))
 neurons = 32
@@ -134,3 +138,20 @@ for tl in labelnames
     end
     print("\n")
 end
+
+labelnames
+df_labels
+time_split_complete_schema
+extractor
+data
+model
+Flux.onecold(softmax(model(data)), labelnames)
+
+
+@save "cape_model_variables.jld2" labelnames df_labels time_split_complete_schema extractor data model
+
+@save "extractedCapeData.jld2" data
+@save "capeExtractor.jld2" extractor
+
+@load "extractedCapeData.jld2" data
+@load "capeExtractor.jld2" extractor
