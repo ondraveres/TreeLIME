@@ -1,4 +1,4 @@
-function treelime(ds, model, extractor, schema)
+function treelime(ds, model, extractor, sch)
     mask = ExplainMill.create_mask_structure(ds, d -> SimpleMask(fill(false, d)))
     N = 100
     modified_samples = []
@@ -116,10 +116,12 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
             for i in 1:numobs(data_node)
                 # original_hot_vector = data_node.data[:, i]
                 if rand() > 0.5
+                    global new_values
                     random_val = sample(vals, w)
                     push!(new_values, random_val)
                     mask_node.mask.x[i] = true
                 else
+                    global new_values
                     push!(new_values, data_node.metadata[i])
                     mask_node.mask.x[i] = false
                 end

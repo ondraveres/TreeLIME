@@ -38,26 +38,26 @@ exdf = DataFrame()
 model_variant_k = 1
 predictions = Flux.onecold(softmax(model(ds)))
 
-n = length(length(variants) * sample_num)
-p = Progress(n, 1)  # 
-for (name, pruning_method) in variants
-    e = getexplainer(name)
-    @info "explainer $e on $name with $pruning_method"
-    flush(stdout)
+# n = length(length(variants) * sample_num)
+# p = Progress(n, 1)  # 
+# for (name, pruning_method) in variants
+#     e = getexplainer(name)
+#     @info "explainer $e on $name with $pruning_method"
+#     flush(stdout)
 
-    for j in 1:numobs(ds)
-        println(j)
-        global exdf
-        exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.8, name, :Flat_HAdd, j, statlayer, extractor, model_variant_k)
-        next!(p)  # upd
-    end
-end
+#     for j in 1:numobs(ds)
+#         println(j)
+#         global exdf
+#         exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.8, name, :Flat_HAdd, j, statlayer, extractor, model_variant_k)
+#         next!(p)  # upd
+#     end
+# end
 for j in 1:numobs(ds)
     global exdf
-    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, model_variant_k)
+    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, time_split_complete_schema, model_variant_k)
 end
 
-# ms = ExplainMill.explain(ExplainMill.GradExplainer(), ds[1], logsoft_model, predictions[1], pruning_method=:Flat_HAdd, rel_tol=0.8)
+# ms = ExplainMill.explain(ExplainMill.GradExplainer(), ds[1], logsoft_model, predictions[1], pruning_method=:Flat_HAdd, abs_tol=0.8)
 # logical = ExplainMill.e2boolean(ds[1], ms, extractor)
 
 # OneHotArrays
@@ -69,4 +69,4 @@ end
 
 # my_ngram = nothing
 
-# my_ngram
+# my_ngramx

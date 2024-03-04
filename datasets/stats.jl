@@ -113,7 +113,7 @@ function add_cape_experiment(exdf, e, dd, logsoft_model, class_to_explain, rel_t
     vcat(exdf, DataFrame([s]))
 end
 
-function add_cape_treelime_experiment(exdf, dd, logsoft_model, class_to_explain, sampleno, statlayer::StatsLayer, extractor, model_variant_k=1)
+function add_cape_treelime_experiment(exdf, dd, logsoft_model, class_to_explain, sampleno, statlayer::StatsLayer, extractor, schema, model_variant_k=1)
     reset!(statlayer)
     t = @elapsed ms = treelime(dd, logsoft_model, extractor, schema)
     s = merge((
