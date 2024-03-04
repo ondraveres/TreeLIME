@@ -93,7 +93,27 @@ function addexperiment(exdf, e, dd, logsoft_model, i, rel_tol, name, pruning_met
     vcat(exdf, DataFrame([s]))
 end
 
-function add_treelime_experiment(exdf, dd, logsoft_model, i, sampleno, settings, statlayer::StatsLayer, model_variant_k, extractor)
+function add_cape_experiment(exdf, e, dd, logsoft_model, class_to_explain, rel_tol, name, pruning_method, sampleno, statlayer::StatsLayer, extractor, model_variant_k=1)
+    reset!(statlayer)
+    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, class_to_explain, pruning_method=pruning_method, rel_tol=rel_tol)
+    logical = ExplainMill.e2boolean(dd, ms, extractor)
+    s = (
+        name=name,
+        pruning_method=pruning_method,
+        sampleno=sampleno,
+        time=t,
+        dataset="cape",
+        task="malware family clasification",
+        incarnation=1,
+        inferences=statlayer.f,
+        gradients=statlayer.b,
+        model_variant_k=model_variant_k,
+        explanation_json=JSON.json(logical)
+    )
+    vcat(exdf, DataFrame([s]))
+end
+
+function add_cape_treelime_experiment(exdf, dd, logsoft_model, class_to_explain, sampleno, statlayer::StatsLayer, extractor, model_variant_k=1)
     reset!(statlayer)
     t = @elapsed ms = treelime(dd, logsoft_model, extractor, schema)
     s = merge((
@@ -108,7 +128,7 @@ function add_treelime_experiment(exdf, dd, logsoft_model, i, sampleno, settings,
             gradients=statlayer.b,
             model_variant_k=model_variant_k
         ),
-        stats(dd, ms, extractor, logsoft_model, i, concepts)
+        stats(dd, ms, extractor, logsoft_model, class_to_explain, concepts)
     )
     vcat(exdf, DataFrame([s]))
 end

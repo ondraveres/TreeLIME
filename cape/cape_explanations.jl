@@ -20,7 +20,6 @@ sample_num = 10
 
 labelnames
 
-
 statlayer = StatsLayer()
 model = @set model.m = Chain(model.m, statlayer)
 soft_model = @set model.m = Chain(model.m, softmax)
@@ -35,17 +34,29 @@ variants = vcat(
 )
 ds = data[1:min(numobs(data), sample_num)]
 exdf = DataFrame()
-for (name, pruning_method) in variants
-    e = getexplainer(name)
-    @info "explainer $e on $name with $pruning_method"
-    flush(stdout)
-    for j in 1:numobs(ds)
-        global exdf
-        exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0.9, name, pruning_method, j, settings, statlayer, model_variant_k, extractor)
-    end
-end
-for j in 1:numobs(ds)
-    global exdf
-    exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, extractor)
-end
+model_variant_k = 1
+predictions = Flux.onecold(softmax(model(ds)))
+# for (name, pruning_method) in variants
+#     e = getexplainer(name)
+#     @info "explainer $e on $name with $pruning_method"
+#     flush(stdout)
+
+#     for j in 1:numobs(ds)
+#         global exdf
+#         exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.9, name, pruning_method, j, statlayer, extractor, model_variant_k)
+#     end
+# end
+# for j in 1:numobs(ds)
+#     global exdf
+#     exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, model_variant_k)
+# end
+
+ms = ExplainMill.explain(ExplainMill.StochasticExplainer(), ds[1], logsoft_model, predictions[1], pruning_method=:Flat_HAdd, rel_tol=0.8)
+
+logical = ExplainMill.e2boolean(ds[1], ms, extractor)
+
+OneHotArrays
+
 BSON.@save resultsdir(stats_filename) exdf
+
+Flux.OneHotMatrix <: Mill.MaybeHotMatrix
