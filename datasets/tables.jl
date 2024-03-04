@@ -19,9 +19,9 @@ function loadstats(p, filename)
     end
     global hits += 1
     @info "paths is $(joinpath(srcdir, p, filename))"
-    # BSON.load(joinpath(srcdir, p, filename))[:exdf]
-    @load joinpath(srcdir, p, filename) exdf #for jdl2
-    return exdf
+    BSON.load(joinpath(srcdir, p, filename))[:exdf]
+    # @load joinpath(srcdir, p, filename) exdf #for jdl2
+    # return exdf
 end
 
 function meanandconfidence(x)
@@ -90,7 +90,7 @@ hits = 0
 df = mapreduce(vcat, ["mutagenesis", "deviceid", "hepatitis"]) do problem
     mapreduce(vcat, readdir(joinpath(srcdir, problem))) do task
         mapreduce(vcat, readdir(joinpath(srcdir, problem, task))) do i
-            loadstats(joinpath(problem, task, i), "stability_data3.bson")
+            loadstats(joinpath(problem, task, i), "stability_data4.bson")
         end
     end
 end

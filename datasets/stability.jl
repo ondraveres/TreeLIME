@@ -8,12 +8,13 @@ Pkg.activate("..")
 
 using BSON, JSON, DataFrames, Statistics
 using ExplainMill: jsondiff, nnodes, nleaves
+using ProgressMeter
 
 BSON.@load "merged_data.bson" df
 
 exdf = df
 
-vscodedisplay(exdf)
+# vscodedisplay(exdf)
 
 function dice_coefficient(a, b)
     size_a = nnodes(a)
@@ -47,10 +48,15 @@ end
 
 
 dice_coefficients = DataFrame(name=String[], pruning_method=String[], average_dice=Union{Float16,Missing}[])
+
+n = length(grouped_df)
+p = Progress(n, 1)  # 
+
 for df in grouped_df
     jsons = map(JSON.parse, df[!, :explanation_json])
     average_dice = average_operation(jsons)
     push!(dice_coefficients, (name=df[1, "name"], pruning_method=string(df[1, "pruning_method"]), average_dice=average_dice))
+    next!(p)  # upd
 end
 
 findall(isnan.(dice_coefficients[:, :average_dice]))
@@ -64,12 +70,16 @@ reshaped_df = unstack(average_df, :name, :pruning_method, :average_dice_function
 
 vscodedisplay(reshaped_df)
 
+BSON.@save "big_stability_full.bson" reshaped_df
+
 selected_df = select(reshaped_df, ["name", "treelime", "Flat_HAdd", "Flat_HArr", "Flat_HArrft", "LbyL_HAdd", "LbyL_HArr", "LbyL_HArrft"])
 
 selected_df
 filtered_df = filter(row -> row[:name] != "gnn2", selected_df)
 
 vscodedisplay(filtered_df)
+
+BSON.@save "big_stability_shortened.bson" filtered_df
 
 
 # json_string1 = collect(grouped_df)[1][!, :explanation_json][1]
