@@ -57,8 +57,13 @@ else
     @save schema_file sch = sch
 end
 
+sch
+printtree(sch)
 exdf = DataFrame()
 extractor = suggestextractor(sch)
+ds = extractor(samples[1])
+mask = ExplainMill.create_mask_structure(ds, d -> SimpleMask(fill(true, d)))
+printtree(mask)
 if !isfile(resultsdir(stats_filename))
     for model_variant_k in k_variants
         global extractor

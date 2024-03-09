@@ -1,23 +1,39 @@
-function treelime(ds, model, extractor, sch)
-    mask = ExplainMill.create_mask_structure(ds, d -> SimpleMask(fill(false, d)))
-    N = 100
+using ProgressMeter
+function treelime(ds, model, extractor, sch, perturbation_count, perturbation_chance)
+    mask = ExplainMill.create_mask_structure(ds, d -> SimpleMask(fill(true, d)))
+    p = Progress(perturbation_count, 1)  # 
     modified_samples = []
     modification_masks = []
     flat_modification_masks = []
     labels = []
-    for i in 1:N
+    samples = []
+    for i in 1:perturbation_count
         mysample_copy = deepcopy(ds)
         mask_copy = deepcopy(mask)
         sch_copy = deepcopy(sch)
         extractor_copy = deepcopy(extractor)
-        (s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy)
+        (s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy, perturbation_chance)
         local new_flat_view = ExplainMill.FlatView(m)
         new_mask_bool_vector = [new_flat_view[i] for i in 1:length(new_flat_view.itemmap)]
         push!(flat_modification_masks, new_mask_bool_vector)
-        push!(labels, argmax(model(s))[1])
+        # push!(labels, argmax(model(s))[1])
+        push!(samples, s)
+        # println(model(s))
+        # println(model(s))
         push!(modified_samples, s)
         push!(modification_masks, m)
+        # logical = ExplainMill.e2boolean(s, mask, extractor)
+        # logical_json = JSON.json(logical)
+        # filename = "logical_$(i).json"
+        next!(p)  # upd
+        # open(filename, "w") do f
+        #     write(f, logical_json)
+        # end
     end
+    dss = reduce(catobs, samples)
+    labels = Flux.onecold((model(dss)))
+    return labels
+
     mean(labels .== 2)
 
     mean(flat_modification_masks)
@@ -25,10 +41,13 @@ function treelime(ds, model, extractor, sch)
     X = hcat(flat_modification_masks...)
     y = labels
 
+    println("y is ", y)
+
     Xmatrix = convert(Matrix, X')  # transpose X because glmnet assumes features are in columns
     yvector = convert(Vector, y)
 
     # Fit the model
+
     cv = glmnetcv(Xmatrix, yvector; alpha=1.0)  # alpha=1.0 for lasso
     βs = cv.path.betas
     λs = cv.lambda
@@ -70,7 +89,7 @@ function extractbatch_andstore(extractor, samples; store_input=false)
     mapreduce(s -> extractor(s, store_input=store_input), catobs, samples)
 end
 
-function my_recursion(data_node, mask_node, extractor_node, schema_node)
+function my_recursion(data_node, mask_node, extractor_node, schema_node, perturbation_chance)
     if data_node isa ProductNode
         children_names = []
         modified_data_ch_nodes = []
@@ -83,7 +102,7 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
             pairs(children(mask_node))
         )
             push!(children_names, data_ch_name)
-            (modified_child_data, modified_child_mask) = my_recursion(data_ch_node, mask_ch_node, extractor_node[data_ch_name], schema_node[data_ch_name])
+            (modified_child_data, modified_child_mask) = my_recursion(data_ch_node, mask_ch_node, extractor_node[data_ch_name], schema_node[data_ch_name], perturbation_chance)
             push!(modified_data_ch_nodes, modified_child_data)
             push!(modified_mask_ch_nodes, modified_child_mask)
         end
@@ -94,15 +113,18 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
     end
     if data_node isa BagNode
         child_node = Mill.data(data_node)
-        (modified_data_child_node, modified_child_mask) = my_recursion(child_node, mask_node.child, extractor_node.item, schema_node.items)
+        (modified_data_child_node, modified_child_mask) = my_recursion(child_node, mask_node.child, extractor_node.item, schema_node.items, perturbation_chance)
 
         return BagNode(modified_data_child_node, data_node.bags, data_node.metadata), ExplainMill.BagMask(modified_child_mask, mask_node.bags, mask_node.mask)
     end
     if data_node isa ArrayNode
+        if numobs(data_node) == 0
+            return (data_node, mask_node)
+        end
         total = sum(values(schema_node.counts))
         normalized_probs = [v / total for v in values(schema_node.counts)]
         n = length(normalized_probs)  # Get the number of elements
-        w = Weights(ones(n))
+        w = Weights(ones(n))#collect(values(schema_node.counts)))
         vals = collect(keys(schema_node.counts))
 
         if mask_node isa ExplainMill.CategoricalMask
@@ -113,26 +135,36 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node)
             global my_schema_node = schema_node
             global my_data_node = data_node
             new_values = []
+            # println("new values start ", numobs(data_node), " -> ", data_node)
             for i in 1:numobs(data_node)
                 # original_hot_vector = data_node.data[:, i]
-                if rand() > 0.5
-                    global new_values
+                if rand() > perturbation_chance
+
                     random_val = sample(vals, w)
+                    # if (random_val == data_node.metadata[i])
+                    #     println("MATCH")
+                    # else
+                    #     println("MISS")
+                    # end
                     push!(new_values, random_val)
+                    # println("pushing ", random_val)
+
                     mask_node.mask.x[i] = true
                 else
-                    global new_values
+                    # println("pushing ", data_node.metadata[i])
+
                     push!(new_values, data_node.metadata[i])
                     mask_node.mask.x[i] = false
                 end
 
             end
+            # println("new values done ", new_values)
 
             new_array_node = extractbatch_andstore(extractor_node, new_values; store_input=true)
             return new_array_node, mask_node
         end
         if mask_node isa ExplainMill.FeatureMask
-            if rand() > 0.5
+            if rand() > perturbation_chance
                 new_hot_vectors = []
                 new_random_keys = []
                 global my_mask_node = mask_node

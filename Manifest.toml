@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.0"
+julia_version = "1.10.2"
 manifest_format = "2.0"
 project_hash = "9695a40a38cde9a919da82a70fd76cceb9ce5db6"
 
@@ -324,7 +324,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.5+1"
+version = "1.1.0+0"
 
 [[deps.CompositionsBase]]
 git-tree-sha1 = "802bb88cd69dfd1509f6670416bd4434015693ad"
@@ -522,7 +522,7 @@ uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
 version = "2.5.0+0"
 
 [[deps.ExplainMill]]
-deps = ["ArgParse", "ChainRulesCore", "Clustering", "DataStructures", "Distances", "Duff", "Flux", "HierarchicalUtils", "JSON", "JsonGrinder", "Mill", "Random", "Setfield", "SparseArrays", "StatsBase"]
+deps = ["ChainRulesCore", "Clustering", "DataStructures", "Distances", "Duff", "Flux", "HierarchicalUtils", "JSON", "JsonGrinder", "Mill", "Random", "Revise", "Setfield", "SparseArrays", "StatsBase"]
 path = "../../ExplainMill.jl"
 uuid = "a2c437b0-bf6b-41a1-8a62-162a814afa99"
 version = "0.0.1"
@@ -1205,10 +1205,10 @@ uuid = "128add7d-3638-4c79-886c-908ea0c25c34"
 version = "0.1.4"
 
 [[deps.Mill]]
-deps = ["ChainRulesCore", "Combinatorics", "DataFrames", "DataStructures", "FiniteDifferences", "Flux", "HierarchicalUtils", "LinearAlgebra", "MLUtils", "MacroTools", "OneHotArrays", "PooledArrays", "Preferences", "Setfield", "SparseArrays", "Statistics", "Test"]
+deps = ["Accessors", "ChainRulesCore", "Combinatorics", "DataFrames", "DataStructures", "FiniteDifferences", "Flux", "HierarchicalUtils", "LinearAlgebra", "MLUtils", "MacroTools", "OneHotArrays", "PooledArrays", "Preferences", "SparseArrays", "Statistics", "Test"]
 path = "../../Mill.jl"
 uuid = "1d0525e4-8992-11e8-313c-e310e1f6ddea"
-version = "2.10.0"
+version = "2.10.2"
 
 [[deps.Missings]]
 deps = ["DataAPI"]
@@ -1313,7 +1313,7 @@ version = "0.2.5"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.23+2"
+version = "0.3.23+4"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]

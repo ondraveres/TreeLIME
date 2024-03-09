@@ -10,14 +10,14 @@ using ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, Pray
 using ExplainMill: jsondiff, nnodes, nleaves
 using ProgressMeter
 
-@load "cape_model_variables.jld2" labelnames df_labels time_split_complete_schema extractor data model
+@time @load "cape_model_variables_big.jld2" labelnames df_labels time_split_complete_schema extractor data model
 
 include("../datasets/treelime.jl")
 include("../datasets/common.jl")
 include("../datasets/loader.jl")
 include("../datasets/stats.jl")
 
-sample_num = 1
+sample_num = 1000
 
 labelnames
 
@@ -36,10 +36,10 @@ variants = vcat(
 ds = data[1:min(numobs(data), sample_num)]
 exdf = DataFrame()
 model_variant_k = 1
-predictions = Flux.onecold(softmax(model(ds)))
+predictions = Flux.onecold((model(ds)))
 
-# n = length(length(variants) * sample_num)
-# p = Progress(n, 1)  # 
+n = length(length(variants) * sample_num)
+p = Progress(n, 1)  # 
 # for (name, pruning_method) in variants
 #     e = getexplainer(name)
 #     @info "explainer $e on $name with $pruning_method"
@@ -54,9 +54,36 @@ predictions = Flux.onecold(softmax(model(ds)))
 # end
 for j in 1:numobs(ds)
     global exdf
-    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, time_split_complete_schema, model_variant_k)
+    exdf = add_cape_treelime_experiment(exdf, ds[429], logsoft_model, predictions[j], j, statlayer, extractor, time_split_complete_schema, 1000, model_variant_k)
 end
 
+predictions = Flux.onecold((model(ds[429])))
+
+first_indices = Dict(value => findall(==(value), predictions)[1:min(end, 10)] for value in unique(predictions))
+first_indices
+sorted = sort(first_indices)
+Base.show(sorted)
+
+for (class, sample_indexes) in pairs(sorted)
+    for sample_index in sample_indexes
+        lables = treelime(ds[sample_index], logsoft_model, extractor, time_split_complete_schema, 10, 0.5)
+        println("exploration rate: ", mean(lables .== class))
+        # if mean(lables .== class) == 1
+        #     println("no exploration")
+        # else
+        #     println(lables)
+        #     println("index: ", sample_index, " class: ", class)
+        #     println("exploration found")
+        #     return
+        # end
+    end
+end
+
+time_split_complete_schema
+
+for i in 1:1
+    println("This is iteration number $i")
+end
 # ms = ExplainMill.explain(ExplainMill.GradExplainer(), ds[1], logsoft_model, predictions[1], pruning_method=:Flat_HAdd, abs_tol=0.8)
 # logical = ExplainMill.e2boolean(ds[1], ms, extractor)
 
