@@ -7,6 +7,11 @@ function treelime(ds, model, extractor, sch, perturbation_count, perturbation_ch
     flat_modification_masks = []
     labels = []
     samples = []
+    o_logical = ExplainMill.e2boolean(ds, mask, extractor)
+    o_logical_json = JSON.json(o_logical)
+    open("original.json", "w") do f
+        write(f, o_logical_json)
+    end
     for i in 1:perturbation_count
         mysample_copy = deepcopy(ds)
         mask_copy = deepcopy(mask)
@@ -25,14 +30,14 @@ function treelime(ds, model, extractor, sch, perturbation_count, perturbation_ch
         # logical = ExplainMill.e2boolean(s, mask, extractor)
         # logical_json = JSON.json(logical)
         # filename = "logical_$(i).json"
-        next!(p)  # upd
+        # # next!(p)  # upd
         # open(filename, "w") do f
         #     write(f, logical_json)
         # end
     end
     dss = reduce(catobs, samples)
     labels = Flux.onecold((model(dss)))
-    return labels
+    # return labels
 
     mean(labels .== 2)
 
@@ -90,6 +95,9 @@ function extractbatch_andstore(extractor, samples; store_input=false)
 end
 
 function my_recursion(data_node, mask_node, extractor_node, schema_node, perturbation_chance)
+    # println("recursion start")
+    # printtree(data_node)
+    # println("end of log")
     if data_node isa ProductNode
         children_names = []
         modified_data_ch_nodes = []
@@ -112,6 +120,7 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node, perturb
         return ProductNode(nt_data), ExplainMill.ProductMask(nt_mask)
     end
     if data_node isa BagNode
+
         child_node = Mill.data(data_node)
         (modified_data_child_node, modified_child_mask) = my_recursion(child_node, mask_node.child, extractor_node.item, schema_node.items, perturbation_chance)
 
@@ -127,7 +136,11 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node, perturb
         w = Weights(ones(n))#collect(values(schema_node.counts)))
         vals = collect(keys(schema_node.counts))
 
-        if mask_node isa ExplainMill.CategoricalMask
+        if mask_node isa ExplainMill.NGramMatrixMask
+            # println(vals)
+        end
+
+        if mask_node isa ExplainMill.CategoricalMask || mask_node isa ExplainMill.NGramMatrixMask
             new_hot_vectors = []
             new_random_keys = []
             global my_mask_node = mask_node
@@ -162,8 +175,7 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node, perturb
 
             new_array_node = extractbatch_andstore(extractor_node, new_values; store_input=true)
             return new_array_node, mask_node
-        end
-        if mask_node isa ExplainMill.FeatureMask
+        elseif mask_node isa ExplainMill.FeatureMask
             if rand() > perturbation_chance
                 new_hot_vectors = []
                 new_random_keys = []
@@ -182,6 +194,10 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node, perturb
                 return data_node, mask_node
             end
             return new_array_node, mask_node
+        elseif mask_node isa ExplainMill.EmptyMask
+
+        else
+            @warn typeof(mask_node)
         end
         return ArrayNode(Mill.data(data_node), data_node.metadata), mask_node
     end

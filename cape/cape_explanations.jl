@@ -10,14 +10,15 @@ using ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, Pray
 using ExplainMill: jsondiff, nnodes, nleaves
 using ProgressMeter
 
-@time @load "cape_model_variables_big.jld2" labelnames df_labels time_split_complete_schema extractor data model
+@time @load "cape_model_variables_equal.jld2" labelnames df_labels time_split_complete_schema extractor data model #takes 11 minutes
+
 
 include("../datasets/treelime.jl")
 include("../datasets/common.jl")
 include("../datasets/loader.jl")
 include("../datasets/stats.jl")
 
-sample_num = 1000
+sample_num = 10000
 
 labelnames
 
@@ -52,22 +53,21 @@ p = Progress(n, 1)  #
 #         next!(p)  # upd
 #     end
 # end
-for j in 1:numobs(ds)
-    global exdf
-    exdf = add_cape_treelime_experiment(exdf, ds[429], logsoft_model, predictions[j], j, statlayer, extractor, time_split_complete_schema, 1000, model_variant_k)
-end
+# for j in 1:numobs(ds)
+#     global exdf
+#     exdf = add_cape_treelime_experiment(exdf, ds[429], logsoft_model, predictions[j], j, statlayer, extractor, time_split_complete_schema, 1000, model_variant_k)
+# end
 
-predictions = Flux.onecold((model(ds[429])))
+predictions = Flux.onecold((model(ds)))
 
-first_indices = Dict(value => findall(==(value), predictions)[1:min(end, 10)] for value in unique(predictions))
+first_indices = Dict(value => findall(==(value), predictions)[1:min(end, 3)] for value in unique(predictions))
 first_indices
 sorted = sort(first_indices)
-Base.show(sorted)
 
 for (class, sample_indexes) in pairs(sorted)
-    for sample_index in sample_indexes
+    for sample_index in sample_indexes[1]
         lables = treelime(ds[sample_index], logsoft_model, extractor, time_split_complete_schema, 10, 0.5)
-        println("exploration rate: ", mean(lables .== class))
+        println("exploration rate: ", 1 - mean(lables .== class), ", for class ", class, "  and index ", sample_index)
         # if mean(lables .== class) == 1
         #     println("no exploration")
         # else
@@ -78,6 +78,11 @@ for (class, sample_indexes) in pairs(sorted)
         # end
     end
 end
+
+lables = treelime(ds[1001], logsoft_model, extractor, time_split_complete_schema, 10, 0.5)
+
+printtree(ds[1])
+printtree(ds[1].data[:behavior][:summary])
 
 time_split_complete_schema
 

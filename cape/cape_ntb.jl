@@ -16,8 +16,8 @@ using Plots
 using Printf
 using JLD2
 
-num_samples = 10000
-iterations = 20
+# num_samples = 10000
+iterations = 10
 
 THREADS = Threads.nthreads()
 
@@ -34,17 +34,20 @@ grouped = DataFrames.groupby(df_labels, :classification_family)
 grouped
 
 # Initialize an empty DataFrame to store the samples
-samples = DataFrame()
+train_samples = DataFrame()
+test_samples = DataFrame()
 
 # Select a thousand samples from each group
 for sub_df in grouped
     my_df = sub_df[shuffle(1:end), :]
-    first_1000 = my_df[1:130, :]
+    train = my_df[1:500, :]
+    test = my_df[501:600, :]
 
-    append!(samples, first_1000)
+    append!(train_samples, train)
+    append!(test_samples, test)
 end
 
-df_labels = samples
+df_labels = vcat(train_samples, test_samples)
 
 # df_labels
 # df_labels = df_labels[1:min(nrow(df_labels), num_samples), :]
@@ -54,11 +57,11 @@ println("All samples: $(all_samples_count)")
 println("Malware families: ")
 [println(k => v) for (k, v) in countmap(df_labels.classification_family)];
 
-df_labels[!, :month] = map(i -> string(year(i), "-", month(i) < 10 ? "0$(month(i))" : month(i)), df_labels.date);
-month_counts = sort(countmap(df_labels.month) |> collect, by=x -> x[1])
-index2017 = findfirst(j -> j[1] == "2017-01", month_counts)
-previous_months = sum(map(j -> j[2], month_counts[1:index2017-1]))
-month_counts[index2017] = Pair("≤" * month_counts[index2017][1], month_counts[index2017][2] + previous_months)
+# df_labels[!, :month] = map(i -> string(year(i), "-", month(i) < 10 ? "0$(month(i))" : month(i)), df_labels.date);
+# month_counts = sort(countmap(df_labels.month) |> collect, by=x -> x[1])
+# index2017 = findfirst(j -> j[1] == "2017-01", month_counts)
+# previous_months = sum(map(j -> j[2], month_counts[1:index2017-1]))
+# month_counts[index2017] = Pair("≤" * month_counts[index2017][1], month_counts[index2017][2] + previous_months)
 # deleteat!(month_counts, 1:64)
 # bar(getindex.(month_counts, 2), xticks=(1:length(month_counts), getindex.(month_counts, 1)), xtickfontsize=5, ytickfontsize=5, xrotation=45, yguidefontsize=8, xguidefontsize=8, legend=false,
 #     xlabel="Month and year of the first evidence of a sample", ylabel="Number of samples for each month", size=(900, 400),
@@ -66,14 +69,19 @@ month_counts[index2017] = Pair("≤" * month_counts[index2017][1], month_counts[
 
 
 timesplit = Date(2019, 8, 1)
-train_indexes = findall(i -> df_labels.date[i] < timesplit, 1:all_samples_count)
+train_indexes = 1:5000
 test_indexes = [setdiff(Set(1:all_samples_count), Set(train_indexes))...];
+
+# println("Malware families: ")
+# [println(k => v) for (k, v) in countmap(df_labels.classification_family[train_indexes])];
 
 train_size = length(train_indexes)
 test_size = length(test_indexes)
 
 println("Train size: $(train_size)")
 println("Test size: $(test_size)")
+
+
 
 
 
@@ -94,8 +102,8 @@ end
 time_split_complete_schema = merge(sch_parts...)
 time_split_complete_schema
 # printtree(time_split_complete_schema)
-import JsonGrinder: generate_html
-generate_html("recipes_max_vals=100.html", time_split_complete_schema, max_vals=100000)
+# import JsonGrinder: generate_html
+# generate_html("recipes_max_vals=100.html", time_split_complete_schema, max_vals=100000)
 extractor = suggestextractor(time_split_complete_schema)
 data = tmap(json -> extractor(json, store_input=true), jsons);
 # data = tmap(json -> extractor(json), jsons);
@@ -118,9 +126,6 @@ function minibatch()
     reduce(catobs, data[idx]), Flux.onehotbatch(df_labels.classification_family[idx], labelnames)
 end
 
-
-
-
 function accuracy(x, y)
     vals = tmap(x) do s
         Flux.onecold(softmax(model(s)), labelnames)[1]
@@ -129,7 +134,7 @@ function accuracy(x, y)
 end
 
 
-eval_trainset = shuffle(train_indexes)[1:1000]
+eval_trainset = shuffle(train_indexes)[1:500]
 eval_testset = shuffle(test_indexes)[1:1000]
 
 cb = () -> begin
@@ -181,7 +186,7 @@ time_split_complete_schema
 extractor
 data
 model
-@save "cape_model_variables_big.jld2" labelnames df_labels time_split_complete_schema extractor data model
+@save "cape_model_variables_equal.jld2" labelnames df_labels time_split_complete_schema extractor data model
 using Plots
 predictions = Flux.onecold(softmax(model(data)))
 histogram(predictions, bins=10, title="Histogram", xlabel="Value", ylabel="Frequency")
