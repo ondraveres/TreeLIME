@@ -12,6 +12,7 @@ using ProgressMeter
 
 @time @load "cape_model_variables_equal.jld2" labelnames df_labels time_split_complete_schema extractor data model #takes 11 minutes
 
+@load "cape_equal_extractor.jld2" extractor sch model data
 
 include("../datasets/treelime.jl")
 include("../datasets/common.jl")
@@ -79,8 +80,15 @@ for (class, sample_indexes) in pairs(sorted)
     end
 end
 
-lables = treelime(ds[1001], logsoft_model, extractor, time_split_complete_schema, 10, 0.5)
-
+lables = treelime(ds[37], logsoft_model, extractor, sch, 1000, 0.05)
+mask = lables
+logical = ExplainMill.e2boolean(ds[37], mask, extractor)
+logical_json = JSON.json(logical)
+filename = "explanation.json"
+# next!(p)  # upd
+open(filename, "w") do f
+    write(f, logical_json)
+end
 printtree(ds[1])
 printtree(ds[1].data[:behavior][:summary])
 

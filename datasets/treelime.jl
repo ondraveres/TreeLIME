@@ -7,11 +7,14 @@ function treelime(ds, model, extractor, sch, perturbation_count, perturbation_ch
     flat_modification_masks = []
     labels = []
     samples = []
-    o_logical = ExplainMill.e2boolean(ds, mask, extractor)
-    o_logical_json = JSON.json(o_logical)
-    open("original.json", "w") do f
-        write(f, o_logical_json)
-    end
+
+    og_class = Flux.onecold((model(ds)))[1]
+    println("og_class is ", og_class)
+    # o_logical = ExplainMill.e2boolean(ds, mask, extractor)
+    # o_logical_json = JSON.json(o_logical)
+    # open("original.json", "w") do f
+    #     write(f, o_logical_json)
+    # end
     for i in 1:perturbation_count
         mysample_copy = deepcopy(ds)
         mask_copy = deepcopy(mask)
@@ -37,16 +40,17 @@ function treelime(ds, model, extractor, sch, perturbation_count, perturbation_ch
     end
     dss = reduce(catobs, samples)
     labels = Flux.onecold((model(dss)))
+    println("exploration rate: ", 1 - mean(labels .== og_class))
     # return labels
-
+    labels = ifelse.(labels .== og_class, 2, 1)
     mean(labels .== 2)
 
-    mean(flat_modification_masks)
+    println("lenght ", length(flat_modification_masks[1]))
 
     X = hcat(flat_modification_masks...)
     y = labels
 
-    println("y is ", y)
+    # println("y is ", y)
 
     Xmatrix = convert(Matrix, X')  # transpose X because glmnet assumes features are in columns
     yvector = convert(Vector, y)
@@ -70,9 +74,9 @@ function treelime(ds, model, extractor, sch, perturbation_count, perturbation_ch
 
 
     y_pred = GLMNet.predict(cv, Xmatrix)
+    mean("mean prediction", y_pred)
     y_pred_labels = ifelse.(y_pred .>= 0.5, 2, 1)
     my_accuracy = mean(y_pred_labels .== yvector)
-
     println("Accuracy: $my_accuracy, Non-zero indexes: $(length(non_zero_indices))")
 
 
@@ -110,7 +114,16 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node, perturb
             pairs(children(mask_node))
         )
             push!(children_names, data_ch_name)
-            (modified_child_data, modified_child_mask) = my_recursion(data_ch_node, mask_ch_node, extractor_node[data_ch_name], schema_node[data_ch_name], perturbation_chance)
+            extractor_child_node = extractor_node[data_ch_name]
+            scheme_child_node = nothing
+            try
+                scheme_child_node = schema_node[data_ch_name]
+            catch e
+                printtree(schema_node)
+                @error e
+                return
+            end
+            (modified_child_data, modified_child_mask) = my_recursion(data_ch_node, mask_ch_node, extractor_child_node, scheme_child_node, perturbation_chance)
             push!(modified_data_ch_nodes, modified_child_data)
             push!(modified_mask_ch_nodes, modified_child_mask)
         end
@@ -159,7 +172,7 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node, perturb
                     # else
                     #     println("MISS")
                     # end
-                    push!(new_values, random_val)
+                    push!(new_values, missing)
                     # println("pushing ", random_val)
 
                     mask_node.mask.x[i] = true
@@ -185,7 +198,7 @@ function my_recursion(data_node, mask_node, extractor_node, schema_node, perturb
                 global my_data_node = data_node
                 for i in 1:numobs(data_node)
                     random_key = sample(vals, w)
-                    push!(new_random_keys, random_key)
+                    push!(new_random_keys, missing)
                 end
                 mask_node.mask.x[1] = true
                 new_array_node = extractbatch_andstore(extractor_node, new_random_keys; store_input=true)

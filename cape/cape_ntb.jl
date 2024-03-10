@@ -97,14 +97,16 @@ end;
 
 chunks = Iterators.partition(train_indexes, div(train_size, THREADS))
 sch_parts = tmap(chunks) do ch
-    JsonGrinder.schema(jsons[ch])
+    JsonGrinder.schema(vcat(jsons[ch], Dict()))
 end
 time_split_complete_schema = merge(sch_parts...)
 time_split_complete_schema
+sch = JsonGrinder.schema(vcat(jsons, Dict()))
+
 # printtree(time_split_complete_schema)
 # import JsonGrinder: generate_html
 # generate_html("recipes_max_vals=100.html", time_split_complete_schema, max_vals=100000)
-extractor = suggestextractor(time_split_complete_schema)
+extractor = suggestextractor(sch)
 data = tmap(json -> extractor(json, store_input=true), jsons);
 # data = tmap(json -> extractor(json), jsons);
 # catobs(data)
@@ -120,7 +122,7 @@ model = reflectinmodel(time_split_complete_schema, extractor,
     fsm=Dict("" => k -> Dense(k, length(labelnames))),
 )
 
-minibatchsize = 100
+minibatchsize = 10
 function minibatch()
     idx = sample(train_indexes, minibatchsize, replace=false)
     reduce(catobs, data[idx]), Flux.onehotbatch(df_labels.classification_family[idx], labelnames)
@@ -134,8 +136,8 @@ function accuracy(x, y)
 end
 
 
-eval_trainset = shuffle(train_indexes)[1:500]
-eval_testset = shuffle(test_indexes)[1:1000]
+eval_trainset = shuffle(train_indexes)[1:50]
+eval_testset = shuffle(test_indexes)[1:50]
 
 cb = () -> begin
     train_acc = accuracy(data[eval_trainset], df_labels.classification_family[eval_trainset])
@@ -184,12 +186,15 @@ labelnames
 df_labels
 time_split_complete_schema
 extractor
+
 data
+
 model
-@save "cape_model_variables_equal.jld2" labelnames df_labels time_split_complete_schema extractor data model
-using Plots
-predictions = Flux.onecold(softmax(model(data)))
-histogram(predictions, bins=10, title="Histogram", xlabel="Value", ylabel="Frequency")
+@save "cape_equal_extractor.jld2" extractor sch data model
+@save "cape_model_variables_equal_small.jld2" labelnames df_labels time_split_complete_schema extractor data model
+# using Plots
+# predictions = Flux.onecold(softmax(model(data)))
+# histogram(predictions, bins=10, title="Histogram", xlabel="Value", ylabel="Frequency")
 
 
 # @save "extractedCapeData.jld2" data
