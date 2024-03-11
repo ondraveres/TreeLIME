@@ -133,3 +133,23 @@ function add_cape_treelime_experiment(exdf, dd, logsoft_model, class_to_explain,
     vcat(exdf, DataFrame([s]))
 end
 
+function add_treelime_experiment(exdf, dd, logsoft_model, i, sampleno, settings, statlayer::StatsLayer, model_variant_k, extractor)
+    reset!(statlayer)
+    t = @elapsed ms = treelime(dd, logsoft_model, extractor, schema)
+    s = merge((
+            name="treelime",
+            pruning_method="treelime",
+            sampleno=sampleno,
+            time=t,
+            dataset=settings.dataset,
+            task=settings.task,
+            incarnation=settings.incarnation,
+            inferences=statlayer.f,
+            gradients=statlayer.b,
+            model_variant_k=model_variant_k
+        ),
+        stats(dd, ms, extractor, logsoft_model, i, concepts)
+    )
+    vcat(exdf, DataFrame([s]))
+end
+

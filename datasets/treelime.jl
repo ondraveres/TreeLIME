@@ -24,7 +24,7 @@ function treelime(ds, model, extractor, sch, perturbation_count, perturbation_ch
         local new_flat_view = ExplainMill.FlatView(m)
         new_mask_bool_vector = [new_flat_view[i] for i in 1:length(new_flat_view.itemmap)]
         push!(flat_modification_masks, new_mask_bool_vector)
-        # push!(labels, argmax(model(s))[1])
+        push!(labels, argmax(model(s))[1])
         push!(samples, s)
         # println(model(s))
         # println(model(s))
@@ -38,8 +38,8 @@ function treelime(ds, model, extractor, sch, perturbation_count, perturbation_ch
         #     write(f, logical_json)
         # end
     end
-    dss = reduce(catobs, samples)
-    labels = Flux.onecold((model(dss)))
+    # dss = reduce(catobs, samples)
+    # labels = Flux.onecold((model(dss)))
     println("labels are ", labels)
     # results = tmap(model, samples)
     # labels = Flux.onecold.(results)
@@ -84,10 +84,10 @@ function treelime(ds, model, extractor, sch, perturbation_count, perturbation_ch
     println("Accuracy: $my_accuracy, Non-zero indexes: $(length(non_zero_indices))")
 
 
-    # leafmap!(mask) do mask_node
-    #     mask_node.mask.x .= false
-    #     return mask_node
-    # end
+    leafmap!(mask) do mask_node
+        mask_node.mask.x .= false
+        return mask_node
+    end
 
     new_flat_view = ExplainMill.FlatView(mask)
     new_flat_view[non_zero_indices] = true

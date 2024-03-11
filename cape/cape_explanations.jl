@@ -10,8 +10,8 @@ using ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, Pray
 using ExplainMill: jsondiff, nnodes, nleaves
 using ProgressMeter
 
-@time @load "cape_model_variables_equal.jld2" labelnames df_labels time_split_complete_schema extractor data model #takes 11 minutes
-
+# @time @load "cape_model_variables_equal.jld2" labelnames df_labels time_split_complete_schema extractor data model #takes 11 minutes
+supertype(supertype(typeof(sch)))
 @load "cape_equal_extractor.jld2" extractor sch model data
 
 include("../datasets/treelime.jl")
@@ -59,7 +59,7 @@ p = Progress(n, 1)  #
 #     exdf = add_cape_treelime_experiment(exdf, ds[429], logsoft_model, predictions[j], j, statlayer, extractor, time_split_complete_schema, 1000, model_variant_k)
 # end
 
-predictions = Flux.onecold((model(ds)))
+# predictions = Flux.onecold((model(ds)))
 
 first_indices = Dict(value => findall(==(value), predictions)[1:min(end, 3)] for value in unique(predictions))
 first_indices
@@ -80,11 +80,10 @@ for (class, sample_indexes) in pairs(sorted)
     end
 end
 
-mask = treelime(ds[18], logsoft_model, extractor, sch, 2000, 0.28)
+mask = treelime(ds[18], logsoft_model, extractor, sch, 1000, 0.28)
 logical = ExplainMill.e2boolean(ds[18], mask, extractor)
 logical_json = JSON.json(logical)
-filename = "explanation.json"
-# next!(p)  # upd
+filename = "explanation_with_inner.json"
 open(filename, "w") do f
     write(f, logical_json)
 end
