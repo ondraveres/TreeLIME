@@ -68,6 +68,7 @@ if !isfile(resultsdir(stats_filename))
     for model_variant_k in k_variants
         global extractor
         global sch
+        model_variant_k = 3
         model_name = "my-2-march-model-variant-$(model_variant_k).bson"
         if !isfile(resultsdir(model_name))
             !isdir(resultsdir()) && mkpath(resultsdir())
@@ -141,15 +142,15 @@ if !isfile(resultsdir(stats_filename))
         )
         ds = ds[1:min(numobs(ds), sample_num)]
 
-        for (name, pruning_method) in variants
-            e = getexplainer(name)
-            @info "explainer $e on $name with $pruning_method"
-            flush(stdout)
-            for j in 1:numobs(ds)
-                global exdf
-                exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0.9, name, pruning_method, j, settings, statlayer, model_variant_k, extractor)
-            end
-        end
+        # for (name, pruning_method) in variants
+        #     e = getexplainer(name)
+        #     @info "explainer $e on $name with $pruning_method"
+        #     flush(stdout)
+        #     for j in 1:numobs(ds)
+        #         global exdf
+        #         exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0.9, name, pruning_method, j, settings, statlayer, model_variant_k, extractor)
+        #     end
+        # end
         for j in 1:numobs(ds)
             global exdf
             exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, extractor)
@@ -157,6 +158,10 @@ if !isfile(resultsdir(stats_filename))
     end
     BSON.@save resultsdir(stats_filename) exdf
 end
+treelime(ds[1], logsoft_model, extractor, sch, 1000, 0.6)
+
+
+
 
 # add_treelime_experiment(exdf, ds[1], logsoft_model, 2, 1, settings, statlayer, model_variant_k, extractor)
 

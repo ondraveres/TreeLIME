@@ -80,9 +80,8 @@ for (class, sample_indexes) in pairs(sorted)
     end
 end
 
-lables = treelime(ds[37], logsoft_model, extractor, sch, 1000, 0.05)
-mask = lables
-logical = ExplainMill.e2boolean(ds[37], mask, extractor)
+mask = treelime(ds[18], logsoft_model, extractor, sch, 2000, 0.28)
+logical = ExplainMill.e2boolean(ds[18], mask, extractor)
 logical_json = JSON.json(logical)
 filename = "explanation.json"
 # next!(p)  # upd

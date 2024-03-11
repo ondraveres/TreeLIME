@@ -20,7 +20,7 @@ function treelime(ds, model, extractor, sch, perturbation_count, perturbation_ch
         mask_copy = deepcopy(mask)
         sch_copy = deepcopy(sch)
         extractor_copy = deepcopy(extractor)
-        (s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy, perturbation_chance)
+        (s, m) = my_recursion(mysample_copy, mask_copy, extractor_copy, sch_copy, 1 - perturbation_chance)
         local new_flat_view = ExplainMill.FlatView(m)
         new_mask_bool_vector = [new_flat_view[i] for i in 1:length(new_flat_view.itemmap)]
         push!(flat_modification_masks, new_mask_bool_vector)
@@ -33,13 +33,16 @@ function treelime(ds, model, extractor, sch, perturbation_count, perturbation_ch
         # logical = ExplainMill.e2boolean(s, mask, extractor)
         # logical_json = JSON.json(logical)
         # filename = "logical_$(i).json"
-        # # next!(p)  # upd
+        next!(p)  # upd
         # open(filename, "w") do f
         #     write(f, logical_json)
         # end
     end
     dss = reduce(catobs, samples)
     labels = Flux.onecold((model(dss)))
+    println("labels are ", labels)
+    # results = tmap(model, samples)
+    # labels = Flux.onecold.(results)
     println("exploration rate: ", 1 - mean(labels .== og_class))
     # return labels
     labels = ifelse.(labels .== og_class, 2, 1)
@@ -74,8 +77,9 @@ function treelime(ds, model, extractor, sch, perturbation_count, perturbation_ch
 
 
     y_pred = GLMNet.predict(cv, Xmatrix)
-    mean("mean prediction", y_pred)
-    y_pred_labels = ifelse.(y_pred .>= 0.5, 2, 1)
+    # println("y_pred is ", y_pred)
+    y_pred_labels = ifelse.(y_pred .>= 1.5, 2, 1)
+    println("mean prediction label", mean(y_pred_labels))
     my_accuracy = mean(y_pred_labels .== yvector)
     println("Accuracy: $my_accuracy, Non-zero indexes: $(length(non_zero_indices))")
 
