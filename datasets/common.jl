@@ -9,15 +9,17 @@ function onlycorrect(dss, i, soft_model, min_confidence=0)
     dss[correct[:]]
 end
 
-function getexplainer(name)
+function getexplainer(name; sch=nothing, extractor=nothing)
     if name == "stochastic"
         return ExplainMill.StochasticExplainer()
     elseif name == "grad"
-        return ExplainMill.GradExplainer2()
+        return ExplainMill.GradExplainer()
     elseif name == "gnn"
         return ExplainMill.GnnExplainer()
     elseif name == "banz"
         return ExplainMill.DafExplainer()
+    elseif name == "lime"
+        return ExplainMill.LimeExplainer(sch, extractor, 100, 0.5)
     else
         error("unknown eplainer $name")
     end

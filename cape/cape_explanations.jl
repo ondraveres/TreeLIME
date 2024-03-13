@@ -12,7 +12,7 @@ using ProgressMeter
 
 # @time @load "cape_model_variables_equal.jld2" labelnames df_labels time_split_complete_schema extractor data model #takes 11 minutes
 supertype(supertype(typeof(sch)))
-@load "cape_equal_extractor.jld2" extractor sch model data
+@time @load "cape_equal_extractor.jld2" extractor sch model data
 
 include("../datasets/treelime.jl")
 include("../datasets/common.jl")
@@ -38,7 +38,6 @@ variants = vcat(
 ds = data[1:min(numobs(data), sample_num)]
 exdf = DataFrame()
 model_variant_k = 1
-predictions = Flux.onecold((model(ds)))
 
 n = length(length(variants) * sample_num)
 p = Progress(n, 1)  # 
@@ -60,6 +59,7 @@ p = Progress(n, 1)  #
 # end
 
 # predictions = Flux.onecold((model(ds)))
+predictions = Flux.onecold((model(ds)))
 
 first_indices = Dict(value => findall(==(value), predictions)[1:min(end, 3)] for value in unique(predictions))
 first_indices
@@ -87,6 +87,19 @@ filename = "explanation_with_inner.json"
 open(filename, "w") do f
     write(f, logical_json)
 end
+ExplainMill.confidencegap(soft_model, extractor(logical), 6)[1, 1]
+
+e = LimeExplainer(sch, extractor, 100, 0.5)
+dd = ds[18]
+pruning_method = :Flat_HAdd
+rel_tol = 0.9
+lime_mask = ExplainMill.explain(e, ds[18], logsoft_model, pruning_method=pruning_method, rel_tol=rel_tol)
+open("lime.json", "w") do f
+    write(f, JSON.json(ExplainMill.e2boolean(dd, lime_mask, extractor)))
+end
+ExplainMill.confidencegap(soft_model, extractor(ExplainMill.e2boolean(dd, lime_mask, extractor)), 6)[1, 1]
+
+
 printtree(ds[1])
 printtree(ds[1].data[:behavior][:summary])
 

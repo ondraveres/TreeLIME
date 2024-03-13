@@ -102,7 +102,7 @@ df
 
 
 hits / (hits + misses)
-vscodedisplay(df)
+# vscodedisplay(df)
 BSON.@save "merged_data.bson" df
 mytreelime = filter_treelime(df)
 
@@ -110,7 +110,7 @@ function maketable(df)
     vcat(
         mapreduce(vcat, [false, true]) do b
             uninformative = filtercase(df, nothing, b)
-            heuristic = mapreduce(r -> filtercase(df, r, b), vcat, ["gnn", "grad", "banz", "stochastic"])
+            heuristic = mapreduce(r -> filtercase(df, r, b), vcat, ["gnn", "grad", "banz", "stochastic", "lime"])
             vcat(uninformative, heuristic)
         end,
         filter_treelime(df)

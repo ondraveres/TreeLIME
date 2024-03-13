@@ -10,10 +10,10 @@ using ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, Pray
 using ExplainMill: jsondiff, nnodes, nleaves
 
 
-sample_num = 20
+sample_num = 50
 iter_count = 50
 k_variants = [3, 4, 5]
-stats_filename = "stability_data4.bson"
+stats_filename = "stability_data5.bson"
 
 
 include("treelime.jl")
@@ -23,10 +23,11 @@ include("stats.jl")
 
 
 _s = ArgParseSettings()
+
 @add_arg_table! _s begin
     ("--dataset"; default = "mutagenesis"; arg_type = String)
     ("--task"; default = "one_of_1_5trees"; arg_type = String)
-    ("--incarnation"; default = 8; arg_type = Int)
+    ("--incarnation"; default = 6; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
 settings = parse_args(ARGS, _s; as_symbols=true)
@@ -137,28 +138,31 @@ if !isfile(resultsdir(stats_filename))
         heuristic = [:Flat_HAdd, :Flat_HArr, :Flat_HArrft, :LbyL_HAdd, :LbyL_HArr, :LbyL_HArrft]
         uninformative = [:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
         variants = vcat(
-            collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:],
-            collect(Iterators.product(["grad", "gnn", "banz"], vcat(heuristic)))[:],
-        )
+            collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:], #"stochastic"
+            collect(Iterators.product(["grad", "gnn", "banz", "lime"], vcat(heuristic)))[:],
+        ) #,
         ds = ds[1:min(numobs(ds), sample_num)]
 
-        # for (name, pruning_method) in variants
-        #     e = getexplainer(name)
-        #     @info "explainer $e on $name with $pruning_method"
-        #     flush(stdout)
-        #     for j in 1:numobs(ds)
-        #         global exdf
-        #         exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0.9, name, pruning_method, j, settings, statlayer, model_variant_k, extractor)
-        #     end
-        # end
+        for (name, pruning_method) in variants
+            e = getexplainer(name; sch, extractor)
+            @info "explainer $e on $name with $pruning_method"
+            flush(stdout)
+            for j in 1:numobs(ds)
+                global exdf
+                exdf = addexperiment(exdf, e, ds[j], logsoft_model, 2, 0.9, name, pruning_method, j, settings, statlayer, model_variant_k, extractor)
+            end
+        end
         for j in 1:numobs(ds)
             global exdf
-            exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, extractor)
+            exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, sch, extractor, 100, 0.5)
         end
     end
     BSON.@save resultsdir(stats_filename) exdf
 end
-treelime(ds[1], logsoft_model, extractor, sch, 1000, 0.6)
+
+
+# resultsdir(stats_filename)
+# treelime(ds[1], logsoft_model, extractor, sch, 1000, 0.6)
 
 
 
