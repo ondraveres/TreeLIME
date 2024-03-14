@@ -21,7 +21,8 @@ iterations = 10
 
 THREADS = Threads.nthreads()
 
-PATH_TO_REPORTS = "/Users/ondrejveres/Diplomka/ExplainMill.jl/data/Avast_cuckoo/"
+PATH_TO_REPORTS_LOCAL = "/Users/ondrejveres/Diplomka/ExplainMill.jl/data/Avast_cuckoo/"
+PATH_TO_REPORTS = "/mnt/data/jsonlearning/Avast_cuckoo/"
 PATH_TO_REDUCED_REPORTS = PATH_TO_REPORTS * "public_small_reports/"
 PATH_TO_FULL_REPORTS = PATH_TO_REPORTS * "public_full_reports/"
 PATH_TO_LABELS = "./";
@@ -52,11 +53,17 @@ df_labels = vcat(train_samples, test_samples)
 # df_labels
 # df_labels = df_labels[1:min(nrow(df_labels), num_samples), :]
 # df_labels
+
 all_samples_count = size(df_labels, 1)
 println("All samples: $(all_samples_count)")
 println("Malware families: ")
 [println(k => v) for (k, v) in countmap(df_labels.classification_family)];
 
+# df_labels[!, :month] = map(i -> string(year(i), "-", month(i) < 10 ? "0$(month(i))" : month(i)), df_labels.date);
+# month_counts = sort(countmap(df_labels.month) |> collect, by=x -> x[1])
+# index2017 = findfirst(j -> j[1] == "2017-01", month_counts)
+# previous_months = sum(map(j -> j[2], month_counts[1:index2017-1]))
+# month_counts[index2017] = Pair("≤" * month_counts[index2017][1], month_counts[index2017][2] + previous_months)
 # df_labels[!, :month] = map(i -> string(year(i), "-", month(i) < 10 ? "0$(month(i))" : month(i)), df_labels.date);
 # month_counts = sort(countmap(df_labels.month) |> collect, by=x -> x[1])
 # index2017 = findfirst(j -> j[1] == "2017-01", month_counts)

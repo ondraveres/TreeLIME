@@ -50,8 +50,12 @@ end
 function filter_treelime(df)
     df[:, :pruning_method] .= String.(df[:, :pruning_method])
     pms = ["treelime"]
-    df = filter(r -> r.pruning_method ∈ pms, df)
-    exportcase(df, pms, "treelime", "treelime")
+    df_s = filter(r -> r.name == "treelime_sample", df)
+    df_m = filter(r -> r.name == "treelime_missing", df)
+    vcat(
+        exportcase(df_s, pms, "treelime_sample", "treelime_sample"),
+        exportcase(df_m, pms, "treelime_missing", "treelime_missing")
+    )
 end
 
 function filtercase(df, ranking::String, level_by_level)
@@ -90,7 +94,7 @@ hits = 0
 df = mapreduce(vcat, ["mutagenesis", "deviceid", "hepatitis"]) do problem
     mapreduce(vcat, readdir(joinpath(srcdir, problem))) do task
         mapreduce(vcat, readdir(joinpath(srcdir, problem, task))) do i
-            loadstats(joinpath(problem, task, i), "stability_data4.bson")
+            loadstats(joinpath(problem, task, i), "stability_data5.bson")
         end
     end
 end
@@ -102,7 +106,7 @@ df
 
 
 hits / (hits + misses)
-# vscodedisplay(df)
+vscodedisplay(df)
 BSON.@save "merged_data.bson" df
 mytreelime = filter_treelime(df)
 
@@ -110,7 +114,7 @@ function maketable(df)
     vcat(
         mapreduce(vcat, [false, true]) do b
             uninformative = filtercase(df, nothing, b)
-            heuristic = mapreduce(r -> filtercase(df, r, b), vcat, ["gnn", "grad", "banz", "stochastic", "lime"])
+            heuristic = mapreduce(r -> filtercase(df, r, b), vcat, ["gnn", "grad", "banz", "stochastic", "lime_m", "lime_s"])
             vcat(uninformative, heuristic)
         end,
         filter_treelime(df)
