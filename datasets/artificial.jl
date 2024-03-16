@@ -13,10 +13,9 @@ using ExplainMill: jsondiff, nnodes, nleaves
 sample_num = 3
 iter_count = 50
 k_variants = [3]#[3, 4, 5]
-stats_filename = "stability_data5.bson"
+stats_filename = "stability_data6.bson"
 
 
-include("treelime.jl")
 include("common.jl")
 include("loader.jl")
 include("stats.jl")
@@ -65,7 +64,7 @@ extractor = suggestextractor(sch)
 ds = extractor(samples[1])
 mask = ExplainMill.create_mask_structure(ds, d -> SimpleMask(fill(true, d)))
 printtree(mask)
-if isfile(resultsdir(stats_filename))
+if true || !isfile(resultsdir(stats_filename))
     for model_variant_k in k_variants
         global extractor
         global sch
@@ -138,8 +137,11 @@ if isfile(resultsdir(stats_filename))
         heuristic = [:Flat_HAdd, :Flat_HArr, :Flat_HArrft, :LbyL_HAdd, :LbyL_HArr, :LbyL_HArrft]
         uninformative = [:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
         variants = vcat(
-            collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:], #"stochastic"
-            collect(Iterators.product(["grad", "gnn", "banz", "lime_m", "lime_s"], vcat(heuristic)))[:],
+            collect(Iterators.product([
+                #"stochastic"
+                ], vcat(uninformative, heuristic)))[:], #"stochastic"
+            collect(Iterators.product([#"grad", "gnn", "banz",
+                    "lime_m", "lime_s"], vcat(heuristic)))[:],
         ) #,
         ds = ds[1:min(numobs(ds), sample_num)]
 
@@ -154,43 +156,11 @@ if isfile(resultsdir(stats_filename))
         end
         for j in 1:numobs(ds)
             global exdf
-            exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, sch, extractor, 100, 0.5, "missing")
-            exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, sch, extractor, 100, 0.5, "sample")
+            exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, sch, extractor, 10000, 0.3, "missing")
+            exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, sch, extractor, 10000, 0.3, "sample")
         end
     end
     BSON.@save resultsdir(stats_filename) exdf
 end
 
-
-# resultsdir(stats_filename)
-# treelime(ds[1], logsoft_model, extractor, sch, 1000, 0.6)
-
-
-
-
-# add_treelime_experiment(exdf, ds[1], logsoft_model, 2, 1, settings, statlayer, model_variant_k, extractor)
-
-# dd = ds[2]
-# ms = treelime(dd, logsoft_model, extractor, schema)
-
-# fv = ExplainMill.FlatView(ms);
-# num_true = 0
-# for i in 1:length(fv)
-#     if fv[i]
-#         num_true += 1
-#     end
-# end
-# num_true
-
-# logical = ExplainMill.e2boolean(dd, ms, extractor)
-# nnodes(logical)
-# ExplainMill.useditems(fv)
-
-# fv
-
-# ms[:lumo]
-
-# ms[:inda].mask.x
-
-# HierarchicalUtils.nnodes(ms)
-# HierarchicalUtils.nnodes(dd)
+ExplainMill.treelime(ds[1], logsoft_model, extractor, schema, 100, 0.5, "missing")

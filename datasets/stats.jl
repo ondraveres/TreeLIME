@@ -135,7 +135,7 @@ end
 
 function add_treelime_experiment(exdf, dd, logsoft_model, i, sampleno, settings, statlayer::StatsLayer, model_variant_k, schema, extractor, perturbation_count, perturbation_chance, perturbations_strategy)
     reset!(statlayer)
-    t = @elapsed ms = treelime(dd, logsoft_model, extractor, schema, perturbation_count, perturbation_chance, perturbations_strategy)
+    t = @elapsed ms = ExplainMill.treelime(dd, logsoft_model, extractor, schema, perturbation_count, perturbation_chance, perturbations_strategy)
     s = merge((
             name="treelime_$(perturbations_strategy)",
             pruning_method="treelime",

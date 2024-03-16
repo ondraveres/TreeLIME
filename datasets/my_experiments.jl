@@ -15,8 +15,6 @@ iter_count = 50
 k_variants = [3, 4, 5]
 stats_filename = "stability_data4.bson"
 
-
-include("treelime.jl")
 include("common.jl")
 include("loader.jl")
 include("stats.jl")
@@ -159,17 +157,17 @@ ds = ds[1:min(numobs(ds), sample_num)]
 # end
 
 
-treelime_mask = treelime(ds[1], logsoft_model, extractor, sch, 1000, 0.6)
+treelime_mask = treelime(ds[1], logsoft_model, extractor, sch, 1000, 0.6, "missing")
 
-e = LimeExplainer(sch, extractor, 100, 0.5)
+e = LimeExplainer(sch, extractor, 100, 0.5, "missing")
 dd = ds[1]
 pruning_method = :Flat_HAdd
 rel_tol = 0.9
-lime_mask = ExplainMill.explain(e, dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
-
+Random.seed!(1)
 stochastic_mask = ExplainMill.explain(StochasticExplainer(), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
 grad_mask = ExplainMill.explain(GradExplainer(), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
 const_mask = ExplainMill.explain(ConstExplainer(), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
+lime_mask = ExplainMill.explain(e, dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
 open("lime.json", "w") do f
     write(f, JSON.json(ExplainMill.e2boolean(dd, lime_mask, extractor)))
 end
