@@ -114,7 +114,8 @@ function maketable(df)
     vcat(
         mapreduce(vcat, [false, true]) do b
             uninformative = filtercase(df, nothing, b)
-            heuristic = mapreduce(r -> filtercase(df, r, b), vcat, ["gnn", "grad", "banz", "stochastic", "lime_m", "lime_s"])
+            heuristic = mapreduce(r -> filtercase(df, r, b), vcat, ["gnn", "grad", "banz", "stochastic",
+                "lime_m_0.1", "lime_s_0.1", "lime_m_0.2", "lime_s_0.2", "lime_m_0.3", "lime_s_0.3", "lime_m_0.4", "lime_s_0.4", "lime_m_0.5", "lime_s_0.5", "lime_m_0.6", "lime_s_0.6", "lime_m_0.7", "lime_s_0.7", "lime_m_0.8", "lime_s_0.8", "lime_m_0.9", "lime_s_0.9"])
             vcat(uninformative, heuristic)
         end,
         filter_treelime(df)

@@ -13,7 +13,7 @@ using ExplainMill: jsondiff, nnodes, nleaves
 sample_num = 30
 iter_count = 50
 k_variants = [3, 4, 5]
-stats_filename = "stability_data6.bson"
+stats_filename = "stability_data7.bson"
 
 
 include("common.jl")
@@ -141,7 +141,7 @@ if true || !isfile(resultsdir(stats_filename))
                     "stochastic"
                 ], vcat(uninformative, heuristic)))[:], #"stochastic"
             collect(Iterators.product(["grad", "gnn", "banz",
-                    "lime_m", "lime_s"], vcat(heuristic)))[:],
+                    "lime_m_0.1", "lime_s_0.1", "lime_m_0.2", "lime_s_0.2", "lime_m_0.3", "lime_s_0.3", "lime_m_0.4", "lime_s_0.4", "lime_m_0.5", "lime_s_0.5", "lime_m_0.6", "lime_s_0.6", "lime_m_0.7", "lime_s_0.7", "lime_m_0.8", "lime_s_0.8", "lime_m_0.9", "lime_s_0.9"], vcat(heuristic)))[:],
         ) #,
         ds = ds[1:min(numobs(ds), sample_num)]
 
