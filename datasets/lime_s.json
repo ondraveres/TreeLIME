@@ -15,7 +15,8 @@
         },
         {
             "element": "c",
-            "bonds": []
+            "bonds": [],
+            "atom_type": 22
         },
         {
             "element": "h",
@@ -23,18 +24,19 @@
         },
         {
             "element": "c",
-            "bonds": []
+            "bonds": [],
+            "atom_type": 3
         },
         {
             "element": "h",
             "bonds": []
         },
         {
-            "element": "h",
-            "bonds": []
+            "bonds": [],
+            "atom_type": 22
         },
         {
-            "element": "h",
+            "element": "c",
             "bonds": []
         }
     ]

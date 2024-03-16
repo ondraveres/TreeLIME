@@ -27,15 +27,17 @@
         },
         {
             "element": "h",
+            "bonds": [],
+            "atom_type": 22
+        },
+        {
+            "element": "c",
             "bonds": []
         },
         {
             "element": "h",
-            "bonds": []
-        },
-        {
-            "element": "h",
-            "bonds": []
+            "bonds": [],
+            "atom_type": 22
         }
     ]
 }

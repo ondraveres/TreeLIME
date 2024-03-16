@@ -159,17 +159,21 @@ ds = ds[1:min(numobs(ds), sample_num)]
 
 treelime_mask = treelime(ds[1], logsoft_model, extractor, sch, 1000, 0.6, "missing")
 
-e = LimeExplainer(sch, extractor, 100, 0.5, "missing")
-dd = ds[1]
+e =
+    dd = ds[1]
 pruning_method = :Flat_HAdd
 rel_tol = 0.9
 Random.seed!(1)
 stochastic_mask = ExplainMill.explain(StochasticExplainer(), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
 grad_mask = ExplainMill.explain(GradExplainer(), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
 const_mask = ExplainMill.explain(ConstExplainer(), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
-lime_mask = ExplainMill.explain(e, dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
-open("lime.json", "w") do f
-    write(f, JSON.json(ExplainMill.e2boolean(dd, lime_mask, extractor)))
+lime_m_mask = ExplainMill.explain(LimeExplainer(sch, extractor, 3, 0.5, "missing"), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
+lime_s_mask = ExplainMill.explain(LimeExplainer(sch, extractor, 3, 0.5, "sample"), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
+open("lime_m.json", "w") do f
+    write(f, JSON.json(ExplainMill.e2boolean(dd, lime_m_mask, extractor)))
+end
+open("lime_s.json", "w") do f
+    write(f, JSON.json(ExplainMill.e2boolean(dd, lime_s_mask, extractor)))
 end
 open("treelime.json", "w") do f
     write(f, JSON.json(ExplainMill.e2boolean(dd, treelime_mask, extractor)))

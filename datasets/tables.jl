@@ -122,7 +122,7 @@ function maketable(df)
 end
 df
 t1 = maketable(df)
-#vscodedisplay(t1)
+vscodedisplay(t1)
 
 dontjump
 

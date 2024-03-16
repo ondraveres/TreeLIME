@@ -10,9 +10,9 @@ using ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, Pray
 using ExplainMill: jsondiff, nnodes, nleaves
 
 
-sample_num = 3
+sample_num = 30
 iter_count = 50
-k_variants = [3]#[3, 4, 5]
+k_variants = [3, 4, 5]
 stats_filename = "stability_data6.bson"
 
 
@@ -138,9 +138,9 @@ if true || !isfile(resultsdir(stats_filename))
         uninformative = [:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
         variants = vcat(
             collect(Iterators.product([
-                #"stochastic"
+                    "stochastic"
                 ], vcat(uninformative, heuristic)))[:], #"stochastic"
-            collect(Iterators.product([#"grad", "gnn", "banz",
+            collect(Iterators.product(["grad", "gnn", "banz",
                     "lime_m", "lime_s"], vcat(heuristic)))[:],
         ) #,
         ds = ds[1:min(numobs(ds), sample_num)]
@@ -156,11 +156,11 @@ if true || !isfile(resultsdir(stats_filename))
         end
         for j in 1:numobs(ds)
             global exdf
-            exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, sch, extractor, 10000, 0.3, "missing")
-            exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, sch, extractor, 10000, 0.3, "sample")
+            exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, sch, extractor, 100, 0.3, "missing")
+            exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, sch, extractor, 100, 0.3, "sample")
         end
     end
     BSON.@save resultsdir(stats_filename) exdf
 end
 
-ExplainMill.treelime(ds[1], logsoft_model, extractor, schema, 100, 0.5, "missing")
+# ExplainMill.treelime(ds[1], logsoft_model, extractor, schema, 100, 0.5, "missing")
