@@ -94,7 +94,7 @@ hits = 0
 df = mapreduce(vcat, ["mutagenesis", "deviceid", "hepatitis"]) do problem
     mapreduce(vcat, readdir(joinpath(srcdir, problem))) do task
         mapreduce(vcat, readdir(joinpath(srcdir, problem, task))) do i
-            loadstats(joinpath(problem, task, i), "stability_data6.bson")
+            loadstats(joinpath(problem, task, i), "stability_data7.bson")
         end
     end
 end
@@ -106,7 +106,7 @@ df
 
 
 hits / (hits + misses)
-vscodedisplay(df)
+#vscodedisplay(df)
 # BSON.@save "merged_data.bson" df
 # mytreelime = filter_treelime(df)
 
