@@ -11,17 +11,18 @@ using ExplainMill: jsondiff, nnodes, nleaves
 using ProgressMeter
 
 # @time @load "cape_model_variables_equal.jld2" labelnames df_labels time_split_complete_schema extractor data model #takes 11 minutes
-supertype(supertype(typeof(sch)))
+# supertype(supertype(typeof(sch)))
 @time @load "cape_equal_extractor.jld2" extractor sch model data
 
-include("../datasets/treelime.jl")
+
+
 include("../datasets/common.jl")
 include("../datasets/loader.jl")
 include("../datasets/stats.jl")
 
-sample_num = 10000
+sample_num = 5
 
-labelnames
+
 
 statlayer = StatsLayer()
 model = @set model.m = Chain(model.m, statlayer)
@@ -29,12 +30,8 @@ soft_model = @set model.m = Chain(model.m, softmax)
 logsoft_model = @set model.m = Chain(model.m, logsoftmax)
 Random.seed!(1)
 
-heuristic = [:Flat_HAdd, :Flat_HArr, :Flat_HArrft, :LbyL_HAdd, :LbyL_HArr, :LbyL_HArrft]
-uninformative = []#[:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
-variants = vcat(
-    collect(Iterators.product(["stochastic"], vcat(uninformative, heuristic)))[:],
-    collect(Iterators.product(["gnn", "banz"], vcat(heuristic)))[:],
-)#grad missing
+
+
 ds = data[1:min(numobs(data), sample_num)]
 exdf = DataFrame()
 model_variant_k = 1
@@ -61,53 +58,63 @@ p = Progress(n, 1)  #
 # predictions = Flux.onecold((model(ds)))
 predictions = Flux.onecold((model(ds)))
 
-first_indices = Dict(value => findall(==(value), predictions)[1:min(end, 3)] for value in unique(predictions))
+first_indices = Dict(value => findall(==(value), predictions)[1:min(end, 100)] for value in unique(predictions))
 first_indices
 sorted = sort(first_indices)
-
-for (class, sample_indexes) in pairs(sorted)
-    for sample_index in sample_indexes[1]
-        lables = treelime(ds[sample_index], logsoft_model, extractor, time_split_complete_schema, 10, 0.5)
-        println("exploration rate: ", 1 - mean(lables .== class), ", for class ", class, "  and index ", sample_index)
-        # if mean(lables .== class) == 1
-        #     println("no exploration")
-        # else
-        #     println(lables)
-        #     println("index: ", sample_index, " class: ", class)
-        #     println("exploration found")
-        #     return
-        # end
+exdf = DataFrame()
+variants = getVariants()
+pairs(sorted)
+# @showprogress 1 "Processing..." for (class, sample_indexes) in pairs(sorted)
+#     @showprogress "Processing samples..." for sample_index in sample_indexes
+@showprogress "Processing observations..." for j in 1:numobs(ds)
+    global exdf
+    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 100, model_variant_k, 0.5, "missing")
+    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 100, model_variant_k, 0.5, "sample")
+end
+@showprogress "Processing variants..." for (name, pruning_method) in variants
+    e = getexplainer(name; sch, extractor)
+    @info "explainer $e on $name with $pruning_method"
+    flush(stdout)
+    @showprogress "Processing observations for variant..." for j in 1:numobs(ds)
+        global exdf
+        exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.8, name, :Flat_HAdd, j, statlayer, extractor, model_variant_k)
     end
 end
+#     end
+# end
+exdf
 
-mask = treelime(ds[18], logsoft_model, extractor, sch, 1000, 0.28)
-logical = ExplainMill.e2boolean(ds[18], mask, extractor)
-logical_json = JSON.json(logical)
-filename = "explanation_with_inner.json"
-open(filename, "w") do f
-    write(f, logical_json)
-end
-ExplainMill.confidencegap(soft_model, extractor(logical), 6)[1, 1]
+vscodedisplay(exdf)
+@save "cape_ex.bson" exdf
 
-e = LimeExplainer(sch, extractor, 100, 0.5)
-dd = ds[18]
-pruning_method = :Flat_HAdd
-rel_tol = 0.9
-lime_mask = ExplainMill.explain(e, ds[18], logsoft_model, pruning_method=pruning_method, rel_tol=rel_tol)
-open("lime.json", "w") do f
-    write(f, JSON.json(ExplainMill.e2boolean(dd, lime_mask, extractor)))
-end
-ExplainMill.confidencegap(soft_model, extractor(ExplainMill.e2boolean(dd, lime_mask, extractor)), 6)[1, 1]
+# mask = treelime(ds[18], logsoft_model, extractor, sch, 10, 0.28, "missing")
+# logical = ExplainMill.e2boolean(ds[18], mask, extractor)
+# logical_json = JSON.json(logical)
+# filename = "explanation_with_inner.json"
+# open(filename, "w") do f
+#     write(f, logical_json)
+# end
+# ExplainMill.confidencegap(soft_model, extractor(logical), 6)[1, 1]
+
+# e = LimeExplainer(sch, extractor, 100, 0.5)
+# dd = ds[18]
+# pruning_method = :Flat_HAdd
+# rel_tol = 0.9
+# lime_mask = ExplainMill.explain(e, ds[18], logsoft_model, pruning_method=pruning_method, rel_tol=rel_tol)
+# open("lime.json", "w") do f
+#     write(f, JSON.json(ExplainMill.e2boolean(dd, lime_mask, extractor)))
+# end
+# ExplainMill.confidencegap(soft_model, extractor(ExplainMill.e2boolean(dd, lime_mask, extractor)), 6)[1, 1]
 
 
-printtree(ds[1])
-printtree(ds[1].data[:behavior][:summary])
+# printtree(ds[1])
+# printtree(ds[1].data[:behavior][:summary])
 
-time_split_complete_schema
+# time_split_complete_schema
 
-for i in 1:1
-    println("This is iteration number $i")
-end
+# for i in 1:1
+#     println("This is iteration number $i")
+# end
 # ms = ExplainMill.explain(ExplainMill.GradExplainer(), ds[1], logsoft_model, predictions[1], pruning_method=:Flat_HAdd, abs_tol=0.8)
 # logical = ExplainMill.e2boolean(ds[1], ms, extractor)
 

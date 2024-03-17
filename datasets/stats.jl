@@ -97,38 +97,40 @@ function add_cape_experiment(exdf, e, dd, logsoft_model, class_to_explain, rel_t
     reset!(statlayer)
     t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, class_to_explain, pruning_method=pruning_method, rel_tol=rel_tol)
     logical = ExplainMill.e2boolean(dd, ms, extractor)
-    s = (
-        name=name,
-        pruning_method=pruning_method,
-        sampleno=sampleno,
-        time=t,
-        dataset="cape",
-        task="malware family clasification",
-        incarnation=1,
-        inferences=statlayer.f,
-        gradients=statlayer.b,
-        model_variant_k=model_variant_k,
-        explanation_json=JSON.json(logical)
+    s = merge((
+            name=name,
+            pruning_method=pruning_method,
+            sampleno=sampleno,
+            time=t,
+            dataset="cape",
+            task="malware family clasification",
+            incarnation=1,
+            inferences=statlayer.f,
+            gradients=statlayer.b,
+            model_variant_k=model_variant_k,
+            explanation_json=JSON.json(logical)
+        ),
+        stats(dd, ms, extractor, logsoft_model, class_to_explain, [Dict()])
     )
     vcat(exdf, DataFrame([s]))
 end
 
-function add_cape_treelime_experiment(exdf, dd, logsoft_model, class_to_explain, sampleno, statlayer::StatsLayer, extractor, schema, perturbation_count, model_variant_k=1)
+function add_cape_treelime_experiment(exdf, dd, logsoft_model, class_to_explain, sampleno, statlayer::StatsLayer, extractor, schema, perturbation_count, model_variant_k=1, perturbation_chance=0.5, perturbations_strategy="sample")
     reset!(statlayer)
-    t = @elapsed ms = treelime(dd, logsoft_model, extractor, schema, perturbation_count)
+    t = @elapsed ms = treelime(dd, logsoft_model, extractor, schema, perturbation_count, perturbation_chance, perturbations_strategy)
     s = merge((
             name="treelime",
             pruning_method="treelime",
             sampleno=sampleno,
             time=t,
-            dataset=settings.dataset,
-            task=settings.task,
-            incarnation=settings.incarnation,
+            dataset="cape",
+            task="10 class",
+            incarnation="single",
             inferences=statlayer.f,
             gradients=statlayer.b,
             model_variant_k=model_variant_k
         ),
-        stats(dd, ms, extractor, logsoft_model, class_to_explain, concepts)
+        stats(dd, ms, extractor, logsoft_model, class_to_explain, [Dict()])
     )
     vcat(exdf, DataFrame([s]))
 end

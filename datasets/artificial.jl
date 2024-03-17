@@ -136,13 +136,8 @@ if true || !isfile(resultsdir(stats_filename))
 
         heuristic = [:Flat_HAdd, :Flat_HArr, :Flat_HArrft, :LbyL_HAdd, :LbyL_HArr, :LbyL_HArrft]
         uninformative = [:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
-        variants = vcat(
-            collect(Iterators.product([
-                    "stochastic"
-                ], vcat(uninformative, heuristic)))[:], #"stochastic"
-            collect(Iterators.product(["grad", "gnn", "banz",
-                    "lime_m_0.1", "lime_s_0.1", "lime_m_0.2", "lime_s_0.2", "lime_m_0.3", "lime_s_0.3", "lime_m_0.4", "lime_s_0.4", "lime_m_0.5", "lime_s_0.5", "lime_m_0.6", "lime_s_0.6", "lime_m_0.7", "lime_s_0.7", "lime_m_0.8", "lime_s_0.8", "lime_m_0.9", "lime_s_0.9"], vcat(heuristic)))[:],
-        ) #,
+        variants = getVariants()
+        #,
         ds = ds[1:min(numobs(ds), sample_num)]
 
         for (name, pruning_method) in variants

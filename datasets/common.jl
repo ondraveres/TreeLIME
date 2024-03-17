@@ -9,6 +9,26 @@ function onlycorrect(dss, i, soft_model, min_confidence=0)
     dss[correct[:]]
 end
 
+function getVariants()
+    heuristic = [
+        :Flat_HAdd,
+        :Flat_HArr, :Flat_HArrft, :LbyL_HAdd, :LbyL_HArr, :LbyL_HArrft
+    ]
+    uninformative = []#[:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
+    vcat(
+        collect(Iterators.product([
+                "stochastic"
+            ], vcat(uninformative, heuristic)))[:], #"stochastic"
+        collect(Iterators.product([
+                "grad", "gnn", "banz",
+                "lime_100_m_0.1", "lime_100_s_0.1", "lime_100_m_0.2", "lime_100_s_0.2", "lime_100_m_0.3",
+                "lime_100_s_0.3", "lime_100_m_0.4", "lime_100_s_0.4", "lime_100_m_0.5", "lime_100_s_0.5",
+                "lime_100_m_0.6", "lime_100_s_0.6", "lime_100_m_0.7", "lime_100_s_0.7", "lime_100_m_0.8",
+                "lime_100_s_0.8", "lime_100_m_0.9", "lime_100_s_0.9"],
+            vcat(heuristic)))[:],
+    )
+end
+
 function getexplainer(name; sch=nothing, extractor=nothing)
     if name == "stochastic"
         return ExplainMill.StochasticExplainer()
@@ -18,12 +38,12 @@ function getexplainer(name; sch=nothing, extractor=nothing)
         return ExplainMill.GnnExplainer()
     elseif name == "banz"
         return ExplainMill.DafExplainer()
-    elseif startswith(name, "lime_s")
-        chance = parse(Float64, last(split(name, "_")))
-        return ExplainMill.LimeExplainer(sch, extractor, 100, chance, "missing")
-    elseif startswith(name, "lime_m")
-        chance = parse(Float64, last(split(name, "_")))
-        return ExplainMill.LimeExplainer(sch, extractor, 100, chance, "sample")
+    elseif startswith(name, "lime")
+        split_name = split(name, "_")
+        perturbation_count = parse(Float64, split_name[end-2])
+        perturbation_strategy = split_name[end-1] == "m" ? "missing" : "sample"
+        chance = parse(Float64, split_name[end])
+        return ExplainMill.LimeExplainer(sch, extractor, perturbation_count, chance, perturbation_strategy)
     else
         error("unknown eplainer $name")
     end
