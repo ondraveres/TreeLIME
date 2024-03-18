@@ -13,7 +13,7 @@ function getVariants()
     heuristic = [
         :Flat_HAdd,
         #:Flat_HArr, :Flat_HArrft, 
-        :LbyL_HAdd,
+        #:LbyL_HAdd,
         #:LbyL_HArr, :LbyL_HArrft
     ]
     uninformative = []#[:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
@@ -25,7 +25,10 @@ function getVariants()
                 "grad", "gnn", "banz",
                 #"lime_100_m_0.1", "lime_100_s_0.1", "lime_100_m_0.2", "lime_100_s_0.2", "lime_100_m_0.3",
                 #"lime_100_s_0.3", "lime_100_m_0.4", "lime_100_s_0.4", 
+                "lime_10_m_0.5", "lime_10_s_0.5",
                 "lime_100_m_0.5", "lime_100_s_0.5",
+                "lime_1000_m_0.5", "lime_1000_s_0.5",
+                "lime_10000_m_0.5", "lime_10000_s_0.5",
                 #"lime_100_m_0.6", "lime_100_s_0.6", "lime_100_m_0.7", "lime_100_s_0.7", "lime_100_m_0.8",
                 #"lime_100_s_0.8", "lime_100_m_0.9", "lime_100_s_0.9"
             ],

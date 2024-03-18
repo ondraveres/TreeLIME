@@ -20,7 +20,7 @@ include("../datasets/common.jl")
 include("../datasets/loader.jl")
 include("../datasets/stats.jl")
 
-sample_num = 2
+sample_num = 3
 
 
 
@@ -34,7 +34,7 @@ Random.seed!(1)
 
 ds = data[1:min(numobs(data), sample_num)]
 exdf = DataFrame()
-model_variant_k = 1
+model_variant_k = 3
 # for (name, pruning_method) in variants
 #     e = getexplainer(name)
 #     @info "explainer $e on $name with $pruning_method"
@@ -61,12 +61,19 @@ sorted = sort(first_indices)
 exdf = DataFrame()
 variants = getVariants()
 pairs(sorted)
+ds
 # @showprogress 1 "Processing..." for (class, sample_indexes) in pairs(sorted)
 #     @showprogress "Processing samples..." for sample_index in sample_indexes
 @showprogress "Processing observations..." for j in 1:numobs(ds)
     global exdf
+    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10, model_variant_k, 0.5, "missing")
+    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10, model_variant_k, 0.5, "sample")
     exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 100, model_variant_k, 0.5, "missing")
     exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 100, model_variant_k, 0.5, "sample")
+    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 1000, model_variant_k, 0.5, "missing")
+    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 1000, model_variant_k, 0.5, "sample")
+    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10000, model_variant_k, 0.5, "missing")
+    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10000, model_variant_k, 0.5, "sample")
 end
 @showprogress "Processing variants..." for (name, pruning_method) in variants
     e = getexplainer(name; sch, extractor)
@@ -79,7 +86,6 @@ end
         catch e
             println("fail")
             println(e)
-
         end
     end
 end
@@ -89,6 +95,7 @@ exdf
 
 vscodedisplay(exdf)
 @save "cape_ex_big.bson" exdf
+
 
 # mask = treelime(ds[18], logsoft_model, extractor, sch, 10, 0.28, "missing")
 # logical = ExplainMill.e2boolean(ds[18], mask, extractor)
