@@ -35,9 +35,6 @@ Random.seed!(1)
 ds = data[1:min(numobs(data), sample_num)]
 exdf = DataFrame()
 model_variant_k = 1
-
-n = length(length(variants) * sample_num)
-p = Progress(n, 1)  # 
 # for (name, pruning_method) in variants
 #     e = getexplainer(name)
 #     @info "explainer $e on $name with $pruning_method"
@@ -77,7 +74,13 @@ end
     flush(stdout)
     @showprogress "Processing observations for variant..." for j in 1:numobs(ds)
         global exdf
-        exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.8, name, pruning_method, j, statlayer, extractor, model_variant_k)
+        try
+            exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.8, name, pruning_method, j, statlayer, extractor, model_variant_k)
+        catch e
+            println("fail")
+            println(e)
+
+        end
     end
 end
 #     end
@@ -85,7 +88,7 @@ end
 exdf
 
 vscodedisplay(exdf)
-@save "cape_ex_only_treelime.bson" exdf
+@save "cape_ex_big.bson" exdf
 
 # mask = treelime(ds[18], logsoft_model, extractor, sch, 10, 0.28, "missing")
 # logical = ExplainMill.e2boolean(ds[18], mask, extractor)
