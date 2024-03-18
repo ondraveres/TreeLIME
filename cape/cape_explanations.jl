@@ -20,7 +20,7 @@ include("../datasets/common.jl")
 include("../datasets/loader.jl")
 include("../datasets/stats.jl")
 
-sample_num = 5
+sample_num = 2
 
 
 
@@ -77,7 +77,7 @@ end
     flush(stdout)
     @showprogress "Processing observations for variant..." for j in 1:numobs(ds)
         global exdf
-        exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.8, name, :Flat_HAdd, j, statlayer, extractor, model_variant_k)
+        exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.8, name, pruning_method, j, statlayer, extractor, model_variant_k)
     end
 end
 #     end
@@ -85,7 +85,7 @@ end
 exdf
 
 vscodedisplay(exdf)
-@save "cape_ex.bson" exdf
+@save "cape_ex_only_treelime.bson" exdf
 
 # mask = treelime(ds[18], logsoft_model, extractor, sch, 10, 0.28, "missing")
 # logical = ExplainMill.e2boolean(ds[18], mask, extractor)

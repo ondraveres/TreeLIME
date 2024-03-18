@@ -119,7 +119,7 @@ function add_cape_treelime_experiment(exdf, dd, logsoft_model, class_to_explain,
     reset!(statlayer)
     t = @elapsed ms = treelime(dd, logsoft_model, extractor, schema, perturbation_count, perturbation_chance, perturbations_strategy)
     s = merge((
-            name="treelime",
+            name="treelime_" * perturbations_strategy,
             pruning_method="treelime",
             sampleno=sampleno,
             time=t,
