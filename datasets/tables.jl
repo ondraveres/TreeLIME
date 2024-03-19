@@ -107,7 +107,7 @@ df
 
 hits / (hits + misses)
 #vscodedisplay(df)
-# BSON.@save "merged_data.bson" df
+BSON.@save "aggregated_merged_data.bson" t1
 # mytreelime = filter_treelime(df)
 
 function maketable(df)
@@ -126,6 +126,8 @@ t1 = maketable(df)
 vscodedisplay(t1)
 
 dontjump
+
+
 
 
 # display(maketable(df))

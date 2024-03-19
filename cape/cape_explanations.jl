@@ -20,7 +20,7 @@ include("../datasets/common.jl")
 include("../datasets/loader.jl")
 include("../datasets/stats.jl")
 
-sample_num = 3
+sample_num = 1
 
 
 
@@ -33,7 +33,7 @@ Random.seed!(1)
 
 
 ds = data[1:min(numobs(data), sample_num)]
-exdf = DataFrame()
+#exdf = DataFrame()
 model_variant_k = 3
 # for (name, pruning_method) in variants
 #     e = getexplainer(name)
@@ -58,23 +58,26 @@ predictions = Flux.onecold((model(ds)))
 first_indices = Dict(value => findall(==(value), predictions)[1:min(end, 100)] for value in unique(predictions))
 first_indices
 sorted = sort(first_indices)
-exdf = DataFrame()
+
+#exdf = DataFrame()
 variants = getVariants()
 pairs(sorted)
 ds
 # @showprogress 1 "Processing..." for (class, sample_indexes) in pairs(sorted)
 #     @showprogress "Processing samples..." for sample_index in sample_indexes
-@showprogress "Processing observations..." for j in 1:numobs(ds)
-    global exdf
-    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10, model_variant_k, 0.5, "missing")
-    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10, model_variant_k, 0.5, "sample")
-    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 100, model_variant_k, 0.5, "missing")
-    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 100, model_variant_k, 0.5, "sample")
-    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 1000, model_variant_k, 0.5, "missing")
-    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 1000, model_variant_k, 0.5, "sample")
-    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10000, model_variant_k, 0.5, "missing")
-    exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10000, model_variant_k, 0.5, "sample")
-end
+# @showprogress "Processing observations..." for j in 1:numobs(ds)
+#     for c in [0.5]
+#         global exdf
+#         exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10, model_variant_k, c, "sample")
+#         exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 100, model_variant_k, c, "missing")
+#         exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 100, model_variant_k, c, "sample")
+#         exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10, model_variant_k, c, "missing")
+#         #exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 1000, model_variant_k, c, "missing")
+#         #exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 1000, model_variant_k, c, "sample")
+#         #exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10000, model_variant_k, c, "missing")
+#         #exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10000, model_variant_k, c, "sample")
+#     end
+# end
 @showprogress "Processing variants..." for (name, pruning_method) in variants
     e = getexplainer(name; sch, extractor)
     @info "explainer $e on $name with $pruning_method"
@@ -94,7 +97,15 @@ end
 exdf
 
 vscodedisplay(exdf)
-@save "cape_ex_big.bson" exdf
+@save "extra_valuable_cape_ex_big.bson" exdf
+@load "../datasets/extra_valuable_cape_ex_big.bson" exdf
+exdf
+
+new_df = select(exdf, :name, :pruning_method, :time, :gap, :original_confidence_gap, :nleaves, :explanation_json)
+transform!(new_df, :time => (x -> round.(x, digits=2)) => :time)
+transform!(new_df, :gap => (x -> first.(x)) => :gap, :original_confidence_gap => (x -> first.(x)) => :original_confidence_gap)
+vscodedisplay(new_df)
+
 
 
 # mask = treelime(ds[18], logsoft_model, extractor, sch, 10, 0.28, "missing")
