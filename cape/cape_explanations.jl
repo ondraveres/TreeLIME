@@ -33,24 +33,7 @@ Random.seed!(1)
 
 
 ds = data[1:min(numobs(data), sample_num)]
-#exdf = DataFrame()
 model_variant_k = 3
-# for (name, pruning_method) in variants
-#     e = getexplainer(name)
-#     @info "explainer $e on $name with $pruning_method"
-#     flush(stdout)
-
-#     for j in 1:numobs(ds)
-#         println(j)
-#         global exdf
-#         exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.8, name, :Flat_HAdd, j, statlayer, extractor, model_variant_k)
-#         next!(p)  # upd
-#     end
-# end
-# for j in 1:numobs(ds)
-#     global exdf
-#     exdf = add_cape_treelime_experiment(exdf, ds[429], logsoft_model, predictions[j], j, statlayer, extractor, time_split_complete_schema, 1000, model_variant_k)
-# end
 
 # predictions = Flux.onecold((model(ds)))
 predictions = Flux.onecold((model(ds)))
@@ -59,7 +42,7 @@ first_indices = Dict(value => findall(==(value), predictions)[1:min(end, 100)] f
 first_indices
 sorted = sort(first_indices)
 
-#exdf = DataFrame()
+exdf = DataFrame()
 variants = getVariants()
 pairs(sorted)
 ds
