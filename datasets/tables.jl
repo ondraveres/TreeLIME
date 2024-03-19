@@ -127,6 +127,27 @@ vscodedisplay(t1)
 
 dontjump
 
+BSON.@load "aggregated_merged_data.bson" t1
+t1
+using Plots
+
+y = parse.(Float64, first.(split.(t1[!, :add_e], "±")))
+
+group =first.(t1[!, :ranking], 6)
+x_s = last.(t1[!, :ranking], 3)
+using Random
+x_p = [coalesce(tryparse(Float64, x), rand()) for x in x_s]
+x_p
+y
+group
+t1[!, :ranking]
+plot(t1[!, :ranking], y, group=group)
+plot(t1[!, :ranking], y, group=group, size=(800, 600), legend=:top)
+
+xlims!(0, 1)
+xlims!(0, 1)
+dont jump
+
 
 
 
