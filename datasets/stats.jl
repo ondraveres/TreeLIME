@@ -95,8 +95,8 @@ end
 
 function add_cape_experiment(exdf, e, dd, logsoft_model, class_to_explain, rel_tol, name, pruning_method, sampleno, statlayer::StatsLayer, extractor, model_variant_k=1)
     reset!(statlayer)
-    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, class_to_explain, pruning_method=pruning_method, rel_tol=rel_tol)
-    logical = ExplainMill.e2boolean(dd, ms, extractor)
+    t = @elapsed my_ms = ExplainMill.explain(e, dd, logsoft_model, class_to_explain, pruning_method=pruning_method, rel_tol=0)
+    logical = ExplainMill.e2boolean(dd, my_ms, extractor)
     s = merge((
             name=name,
             pruning_method=pruning_method,
@@ -110,7 +110,7 @@ function add_cape_experiment(exdf, e, dd, logsoft_model, class_to_explain, rel_t
             model_variant_k=model_variant_k,
             explanation_json=JSON.json(logical)
         ),
-        stats(dd, ms, extractor, logsoft_model, class_to_explain, [Dict()])
+        stats(dd, my_ms, extractor, logsoft_model, class_to_explain, [Dict()])
     )
     vcat(exdf, DataFrame([s]))
 end
