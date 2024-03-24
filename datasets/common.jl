@@ -11,12 +11,12 @@ end
 
 function getVariants()
     heuristic = [
-        # :LbyL_HAdd,
+        :LbyL_HAdd,
         :Flat_HAdd,
-        #:Flat_HArr, :Flat_HArrft, 
-        #:LbyL_HArr, :LbyL_HArrft
+        :Flat_HArr, :Flat_HArrft,
+        :LbyL_HArr, :LbyL_HArrft
     ]
-    uninformative = []#[:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
+    uninformative = [:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]#[:Flat_Gadd, :Flat_Garr, :Flat_Garrft, :LbyL_Gadd, :LbyL_Garr, :LbyL_Garrft]
     vcat(
         #("const", :Flat_Gadd),
         #("const", :LbyL_Gadd),
@@ -24,16 +24,16 @@ function getVariants()
             #      "stochastic"
             ], vcat(uninformative, heuristic)))[:], #"stochastic"
         collect(Iterators.product([
-                #"grad",
-                #"gnn",
-                # "banz",
-                #"stochastic",
-                #"lime_100_m_0.1", "lime_100_s_0.1", "lime_100_m_0.2", "lime_100_s_0.2", "lime_100_m_0.3",
-                #"lime_100_s_0.3", "lime_100_m_0.4", "lime_100_s_0.4", 
+                "grad",
+                "gnn",
+                "banz",
+                "stochastic",
+                "lime_10_m_0.1", "lime_100_s_0.1", "lime_100_m_0.2", "lime_100_s_0.2", "lime_100_m_0.3",
+                "lime_100_s_0.3", "lime_100_m_0.4", "lime_100_s_0.4",
                 "lime_100_m_0.5",
                 "lime_100_s_0.5",
-                #"lime_100_m_0.5",
-                #"lime_10000_s_0.5",
+                "lime_100_m_0.5",
+                "lime_10000_s_0.5",
                 # "lime_1000_m_0.5",# "lime_1000_s_0.5",
                 #"lime_10000_s_0.5",# "lime_10000_s_0.5",
                 #"lime_100_m_0.6", "lime_100_s_0.6", "lime_100_m_0.7", "lime_100_s_0.7", "lime_100_m_0.8",
