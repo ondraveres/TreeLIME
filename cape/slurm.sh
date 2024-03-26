@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=exp2
-#SBATCH --time=14:00:00
+#SBATCH --time=20:00:00
 #SBATCH --nodes=1 --ntasks-per-node=1 --cpus-per-task=1
 #SBATCH --mem=20G
 echo Hello
