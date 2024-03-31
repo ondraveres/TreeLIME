@@ -54,7 +54,7 @@ function getexplainer(name; sch=nothing, extractor=nothing)
     elseif name == "gnn"
         return ExplainMill.GnnExplainer()
     elseif name == "banz"
-        return ExplainMill.DafExplainer(20)
+        return ExplainMill.DafExplainer(200)
     elseif startswith(name, "lime")
         split_name = split(name, "_")
         perturbation_count = parse(Float64, split_name[2])
