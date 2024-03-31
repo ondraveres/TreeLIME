@@ -54,12 +54,12 @@ function getexplainer(name; sch=nothing, extractor=nothing)
     elseif name == "gnn"
         return ExplainMill.GnnExplainer()
     elseif name == "banz"
-        return ExplainMill.DafExplainer()
+        return ExplainMill.DafExplainer(20)
     elseif startswith(name, "lime")
         split_name = split(name, "_")
-        perturbation_count = parse(Float64, split_name[end-2])
-        perturbation_strategy = split_name[end-1] == "m" ? "missing" : "sample"
-        chance = parse(Float64, split_name[end])
+        perturbation_count = parse(Float64, split_name[2])
+        perturbation_strategy = split_name[3] == "m" ? "missing" : "sample"
+        chance = parse(Float64, split_name[4])
         return ExplainMill.LimeExplainer(sch, extractor, perturbation_count, chance, perturbation_strategy)
     else
         error("unknown eplainer $name")

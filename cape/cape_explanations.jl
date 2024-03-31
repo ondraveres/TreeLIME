@@ -60,27 +60,30 @@ exdf = DataFrame()
 # end
 # Base.eps(::Type{Any}) = eps(Float32)
 # Base.typemin(::Type{Any}) = typemin(Float32)
-# variants = [#("banz", :Flat_HAdd),
-#     ("lime_10_s_0.01", :Flat_HAdd),
-#     ("lime_100_s_0.01", :Flat_HAdd),
-#     ("lime_1000_s_0.01", :Flat_HAdd),
-#     # ("lime_10_s_0.1", :Flat_HAdd),
-#     #("lime_1000_s_0.5", :Flat_HAdd)
-#     #("lime_15_s_0.5", :Flat_HAdd)
-# ]
-variants = getVariants()
-ds
-@showprogress "Processing variants..." for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
+variants = [
+    ("banz", :Flat_HAdd),
+    # ("lime_3000_s_0.005_b", :Flat_HAdd),
+    # ("lime_100_s_0.05_b", :Flat_HAdd),
+    # ("lime_1000_s_0.05_b", :Flat_HAdd),
+    # ("lime_10_m_0.1_a", :Flat_HAdd),
+    # ("lime_100_m_0.1_a", :Flat_HAdd),
+    # ("lime_1000_m_0.1_a", :Flat_HAdd),
+]
+# variants = getVariants()
+# ds
+# @showprogress "Processing variants..."
+for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
     e = getexplainer(name; sch, extractor)
     @info "explainer $e on $name with $pruning_method"
-    for j in 1:numobs(ds)
+    for j in [3]#1:numobs(ds)
         global exdf
-        try
-            exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-        catch e
-            println("fail")
-            println(e)
-        end
+        # try
+        exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+        # exdf = add_cape_treelime_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+        # catch e
+        #     println("fail")
+        #     println(e)
+        # end
     end
 end
 #     end
@@ -94,7 +97,7 @@ end
 # exdf
 @load "extra_valuable_cape_ex_big2.bson" exdf
 
-exdf
+# exdf
 
 
 new_df = select(exdf, :name, :pruning_method, :time, :gap, :original_confidence_gap, :nleaves, :explanation_json)
