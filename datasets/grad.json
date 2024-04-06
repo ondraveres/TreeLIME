@@ -1,1 +1,11 @@
-{"lumo":-2.87,"inda":0,"logp":2.55,"mutagenic":1.0,"ind1":1,"atoms":[{"bonds":[],"charge":0.006},{"element":"o","bonds":[{"charge":0.316}],"charge":-0.384},{"bonds":[],"charge":0.058},{"bonds":[{"charge":0.012}],"charge":-0.227},{"bonds":[],"charge":0.813},{"bonds":[],"charge":-0.12},{"element":"n","bonds":[{"element":"h","charge":0.811,"atom_type":38},{"element":"h","charge":-0.13}],"charge":-0.128,"atom_type":3},{"bonds":[{"charge":-0.107}],"charge":0.256},{"bonds":[],"charge":0.148}]}
+{
+    "services": [
+        {
+            "protocol": "udp"
+        }
+    ],
+    "ssdp": [],
+    "upnp": [],
+    "dhcp": [],
+    "mdns_services": []
+}

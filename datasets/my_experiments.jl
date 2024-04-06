@@ -22,8 +22,8 @@ include("stats.jl")
 
 _s = ArgParseSettings()
 @add_arg_table! _s begin
-    ("--dataset"; default = "mutagenesis"; arg_type = String)
-    ("--task"; default = "one_of_1_5trees"; arg_type = String)
+    ("--dataset"; default = "deviceid"; arg_type = String)
+    ("--task"; default = "one_of_1_1trees"; arg_type = String)
     ("--incarnation"; default = 8; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
@@ -59,13 +59,13 @@ sch
 printtree(sch)
 exdf = DataFrame()
 extractor = suggestextractor(sch)
-ds = extractor(samples[10012])
+dd = extractor(samples[10012])
 model_variant_k = 3
 model_name = "my-2-march-model-variant-$(model_variant_k).bson"
 
-samples[10012]
+samples[10099]
 index = findfirst(sample -> get(sample, "ip", nothing) == "172.30.100.28", samples)
-ds[10012]
+ds = extractor(samples[10099])
 mask = ExplainMill.create_mask_structure(ds, d -> SimpleMask(fill(true, d)))
 
 printtree(mask)
@@ -73,60 +73,60 @@ fv = ExplainMill.FlatView(mask)
 size(fv.itemmap)
 fv.itemmap
 new_mask_bool_vector = [fv[i] for i in 1:length(fv.itemmap)]
-dont jump
-# if !isfile(resultsdir(stats_filename))
-#     for model_variant_k in k_variants
-#         global extractor
-#         global sch
-#         model_variant_k = 3
-#         model_name = "my-2-march-model-variant-$(model_variant_k).bson"
-#         if !isfile(resultsdir(model_name))
-#             !isdir(resultsdir()) && mkpath(resultsdir())
-#             trndata = extractbatch(extractor, samples)
-#             function makebatch()
-#                 i = rand(1:2000, 100)
-#                 trndata[i], Flux.onehotbatch(labels[i], 1:2)
-#             end
-#             ds = extractor(JsonGrinder.sample_synthetic(sch))
-#             good_model, concept_gap = nothing, 0
-#             # good_model, concept_gap
-#             model = reflectinmodel(
-#                 sch,
-#                 extractor,
-#                 d -> Dense(d, model_variant_k, relu),
-#                 all_imputing=true
-#             )
-#             model = @set model.m = Chain(model.m, Dense(model_variant_k, 2))
-#             for i in 1:iter_count
-#                 @info "start of epoch $i"
-#                 opt = ADAM()
-#                 ps = Flux.params(model)
-#                 loss = (x, y) -> Flux.logitcrossentropy(model(x), y)
-#                 data_loader = Flux.DataLoader((trndata, Flux.onehotbatch(labels, 1:2)), batchsize=100, shuffle=true)
-#                 Flux.Optimise.train!(loss, ps, data_loader, opt)
-#                 soft_model = @set model.m = Chain(model.m, softmax)
-#                 cg = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), 2)[1, 1], concepts))
-#                 eg = ExplainMill.confidencegap(soft_model, extractor(JSON.parse("{}")), 1)[1, 1]
-#                 predictions = model(trndata)
-#                 accuracy(ds, y) = mean(Flux.onecold(model(ds)) .== y)
-#                 acc = mean(Flux.onecold(predictions) .== labels)
-#                 @info "crossentropy on all samples = ", Flux.logitcrossentropy(predictions, Flux.onehotbatch(labels, 1:2)),
-#                 @info "accuracy on all samples = ", acc
-#                 @info "minimum gap on concepts = $(cg) on empty sample = $(eg)"
-#                 @info "accuracy on concepts = $( accuracy(extractor.(concepts), 2)))"
-#                 @info "end of epoch $i"
-#                 flush(stdout)
-#                 if (acc > 0.999)
-#                     break
-#                 end
-#             end
-#             if concept_gap < 0
-#                 error("Failed to train a model")
-#             end
-#             BSON.@save resultsdir(model_name) model extractor sch
-#         end
-#     end
+
+
+
+
+
+global extractor
+global sch
+model_variant_k = 10
+model_name = "my-2-march-model-variant-$(model_variant_k).bson"
+# if true || !isfile(resultsdir(model_name))
+!isdir(resultsdir()) && mkpath(resultsdir())
+trndata = extractbatch(extractor, samples)
+ds = extractor(JsonGrinder.sample_synthetic(sch))
+good_model, concept_gap = nothing, 0
+# good_model, concept_gap
+labels[1]
+JSON.parse("{}")
+model = reflectinmodel(
+    sch,
+    extractor,
+    d -> Dense(d, model_variant_k, relu),
+    all_imputing=true
+)
+model = @set model.m = Chain(model.m, Dense(model_variant_k, 2))
+for i in 1:2
+    @info "start of epoch $i"
+    opt = ADAM()
+    ps = Flux.params(model)
+    loss = (x, y) -> Flux.logitcrossentropy(model(x), y)
+    data_loader = Flux.DataLoader((trndata, Flux.onehotbatch(labels, 1:2)), batchsize=2000, shuffle=true)
+    Flux.Optimise.train!(loss, ps, data_loader, opt)
+    soft_model = @set model.m = Chain(model.m, softmax)
+    cg = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), 2)[1, 1], concepts))
+    eg = ExplainMill.confidencegap(soft_model, extractor(JSON.parse("{}")), 1)[1, 1]
+    predictions = model(trndata)
+    accuracy(ds, y) = mean(Flux.onecold(model(ds)) .== y)
+    acc = mean(Flux.onecold(predictions) .== labels)
+    @info "crossentropy on all samples = ", Flux.logitcrossentropy(predictions, Flux.onehotbatch(labels, 1:2)),
+    @info "accuracy on all samples = ", acc
+    @info "minimum gap on concepts = $(cg) on empty sample = $(eg)"
+    @info "accuracy on concepts = $( accuracy(extractor.(concepts), 2)))"
+    @info "end of epoch $i"
+    flush(stdout)
+    if (acc > 0.999)
+        break
+    end
+end
+if concept_gap < 0
+    error("Failed to train a model")
+end
+BSON.@save resultsdir(model_name) model extractor sch
 # end
+
+labels
 d = BSON.load(resultsdir(model_name))
 (model, extractor, sch) = d[:model], d[:extractor], d[:sch]
 statlayer = StatsLayer()
@@ -136,7 +136,8 @@ logsoft_model = @set model.m = Chain(model.m, logsoftmax)
 my_class_indexes = PrayTools.classindexes(labels)
 Random.seed!(120)
 strain = 2
-ds = loadclass(strain, my_class_indexes, sample_num)
+my_ds =
+    ds = loadclass(strain, my_class_indexes, sample_num)
 i = strain
 concept_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], concepts))
 sample_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], samples[labels.==2]))
@@ -170,19 +171,36 @@ printtree(mask)
 # end
 
 
-treelime_mask = treelime(ds[1], logsoft_model, extractor, sch, 1000, 0.6, "missing")
 
-e =
-    dd = ds[1]
+
+
+dd = extractor(samples[10099], store_input=true)
+mask = ExplainMill.create_mask_structure(dd, d -> SimpleMask(fill(true, d)))
+mask = ExplainMill.create_mask_structure(dd, d -> SimpleMask(fill(true, d)))
+
+mk = ExplainMill.create_mask_structure(dd, d -> SimpleMask(ones(Float32, d)))
+fv = ExplainMill.FlatView(mk)
+
+ranking = [15, 30, 5, 12, 17, 2, 10, 23, 19, 18, 26, 24, 11, 25, 7, 21, 31, 4, 6, 13, 14, 1, 20, 9, 27, 16, 29, 8, 3, 22, 28]
+length(fv.itemmap)
+length(ranking)
+for i in 1:31
+    fv[i] = ranking[i]
+end
+printtree(mk)
+
+printtree(mask)
 pruning_method = :Flat_HAdd
 rel_tol = 0.9
 Random.seed!(1)
 stochastic_mask = ExplainMill.explain(StochasticExplainer(), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
 
+printtree(stochastic_mask)
 
 grad_mask = ExplainMill.explain(DafExplainer(50, true, false, extractor), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
-grad_mask
+printtree(grad_mask)
 
+model()
 
 const_mask = ExplainMill.explain(ConstExplainer(), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
 lime_m_mask = ExplainMill.explain(LimeExplainer(sch, extractor, 3, 0.5, "missing"), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
@@ -211,6 +229,8 @@ mean([1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1,
 my_values = [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0]
 
 my_values2 = [0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1]
+
+
 
 mask2 = ExplainMill.create_mask_structure(ds[1], d -> SimpleMask(fill(true, d)))
 fv = ExplainMill.FlatView(mask2)
