@@ -23,8 +23,9 @@ include("../datasets/stats.jl")
 
 sample_num = 10
 
-
-
+model
+soft_model
+logsoft_model
 statlayer = StatsLayer()
 model = @set model.m = Chain(model.m, statlayer)
 soft_model = @set model.m = Chain(model.m, softmax)
@@ -62,6 +63,11 @@ exdf = DataFrame()
 # Base.typemin(::Type{Any}) = typemin(Float32)
 variants = [
     ("banz", :Flat_HAdd),
+    #("banz", :Flat_HAdd),
+    #("banz", :Flat_HAdd),
+    #("banz", :Flat_HAdd),
+    #("banz", :Flat_HAdd),
+    #("banz", :LbyL_HAdd),
     # ("lime_3000_s_0.005_b", :Flat_HAdd),
     # ("lime_100_s_0.05_b", :Flat_HAdd),
     # ("lime_1000_s_0.05_b", :Flat_HAdd),
@@ -72,6 +78,10 @@ variants = [
 # variants = getVariants()
 # ds
 # @showprogress "Processing variants..."
+printtree(ds[3])
+og_mk = ExplainMill.create_mask_structure(ds[3], d -> SimpleMask(d))
+printtree(og_mk)
+
 for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
     e = getexplainer(name; sch, extractor)
     @info "explainer $e on $name with $pruning_method"
@@ -86,6 +96,8 @@ for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
         # end
     end
 end
+
+exdf
 #     end
 # end
 # exdf

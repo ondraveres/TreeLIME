@@ -1,0 +1,87 @@
+{
+    "mutagenic": 1.0,
+    "atoms": [
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "element": "h",
+                    "charge": -0.115,
+                    "atom_type": 22
+                },
+                {
+                    "bond_type": 7,
+                    "charge": 0.31
+                }
+            ],
+            "atom_type": 3
+        },
+        {
+            "bonds": [
+                {
+                    "element": "c",
+                    "charge": -0.173
+                }
+            ],
+            "atom_type": 3
+        },
+        {
+            "bonds": [
+                {
+                    "element": "c",
+                    "charge": 0.807,
+                    "atom_type": 22
+                },
+                {
+                    "bond_type": 1,
+                    "charge": -0.097
+                },
+                {
+                    "element": "c",
+                    "bond_type": 7,
+                    "charge": 0.144
+                }
+            ],
+            "atom_type": 22
+        },
+        {
+            "element": "h",
+            "bonds": [
+                {
+                    "charge": 0.008,
+                    "atom_type": 38
+                },
+                {
+                    "element": "c",
+                    "bond_type": 1,
+                    "charge": 0.015,
+                    "atom_type": 22
+                },
+                {
+                    "bond_type": 7,
+                    "charge": 0.182,
+                    "atom_type": 38
+                }
+            ]
+        },
+        {
+            "bonds": [
+                {
+                    "charge": 0.059,
+                    "atom_type": 22
+                }
+            ],
+            "atom_type": 22
+        },
+        {
+            "bonds": [
+                {
+                    "element": "n",
+                    "bond_type": 7,
+                    "charge": 0.058
+                }
+            ],
+            "atom_type": 3
+        }
+    ]
+}

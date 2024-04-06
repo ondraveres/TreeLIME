@@ -6,9 +6,9 @@ catch
 end
 using Pkg
 Pkg.activate("..")
+using Revise
 using ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, PrayTools, StatsBase, ExplainMill, Serialization, Setfield, DataFrames, HierarchicalUtils, Random, JLD2, GLMNet, Plots, Zygote
 using ExplainMill: jsondiff, nnodes, nleaves
-
 
 sample_num = 30
 iter_count = 50
@@ -24,9 +24,9 @@ include("stats.jl")
 _s = ArgParseSettings()
 
 @add_arg_table! _s begin
-    ("--dataset"; default = "mutagenesis"; arg_type = String)
-    ("--task"; default = "one_of_1_5trees"; arg_type = String)
-    ("--incarnation"; default = 6; arg_type = Int)
+    ("--dataset"; default = "deviceid"; arg_type = String)
+    ("--task"; default = "one_of_1_1trees"; arg_type = String)
+    ("--incarnation"; default = 8; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
 settings = parse_args(ARGS, _s; as_symbols=true)
@@ -58,13 +58,25 @@ else
 end
 
 sch
-printtree(sch)
 exdf = DataFrame()
 extractor = suggestextractor(sch)
-ds = extractor(samples[1])
+ds = extractor(samples[10099])
+printtree(ds)
 mask = ExplainMill.create_mask_structure(ds, d -> SimpleMask(fill(true, d)))
+fv = ExplainMill.FlatView(mask)
+new_mask_bool_vector = [fv[i] for i in 1:length(fv.itemmap)]
 printtree(mask)
-if true || !isfile(resultsdir(stats_filename))
+printtree(mask)
+printtree(ds)
+ds
+
+printtree(ds)
+samples[1012]
+println(JSON.json(samples[1015]))
+dont jump
+concepts[1]
+
+if !isfile(resultsdir(stats_filename))
     for model_variant_k in k_variants
         global extractor
         global sch

@@ -1,0 +1,38 @@
+{
+    "dhcp": [
+        {
+            "classid": "MSFT 5.0",
+            "paramlist": "1,15,3,6,44,46,47,31,33,121,249,43"
+        }
+    ],
+    "device_id": "87c061b7-0eda-44ba-970b-76d118b37f1e",
+    "mdns_services": [
+        "_googlecast._tcp.local."
+    ],
+    "mac": "00:00:00:00:00:00",
+    "device_class": "PC",
+    "upnp": [
+        {
+            "model_name": "UTC settop box",
+            "manufacturer": "Seagate Technology PLC",
+            "device_type": "urn:schemas-upnp-org:device:MediaRenderer:1",
+            "model_description": "LG WebOSTV DMRplus",
+            "services": [
+                "urn:Belkin:serviceId:manufacture1",
+                "urn:upnp-org:serviceId:GroupManagement",
+                "urn:upnp-org:serviceId:GroupManagement"
+            ]
+        }
+    ],
+    "services": [
+        {
+            "port": 1900,
+            "protocol": "tcp"
+        },
+        {
+            "port": 80,
+            "protocol": "udp"
+        }
+    ],
+    "ip": "172.16.0.108"
+}

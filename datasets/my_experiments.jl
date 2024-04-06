@@ -59,9 +59,21 @@ sch
 printtree(sch)
 exdf = DataFrame()
 extractor = suggestextractor(sch)
-ds = extractor(samples[1])
+ds = extractor(samples[10012])
 model_variant_k = 3
 model_name = "my-2-march-model-variant-$(model_variant_k).bson"
+
+samples[10012]
+index = findfirst(sample -> get(sample, "ip", nothing) == "172.30.100.28", samples)
+ds[10012]
+mask = ExplainMill.create_mask_structure(ds, d -> SimpleMask(fill(true, d)))
+
+printtree(mask)
+fv = ExplainMill.FlatView(mask)
+size(fv.itemmap)
+fv.itemmap
+new_mask_bool_vector = [fv[i] for i in 1:length(fv.itemmap)]
+dont jump
 # if !isfile(resultsdir(stats_filename))
 #     for model_variant_k in k_variants
 #         global extractor
@@ -141,7 +153,8 @@ variants = vcat(
     collect(Iterators.product(["grad", "gnn", "banz"], vcat(heuristic)))[:],
 )
 ds = ds[1:min(numobs(ds), sample_num)]
-
+mask = ExplainMill.create_mask_structure(ds[1], d -> SimpleMask(fill(true, d)))
+printtree(mask)
 # for (name, pruning_method) in variants
 #     e = getexplainer(name)
 #     @info "explainer $e on $name with $pruning_method"
@@ -165,7 +178,12 @@ pruning_method = :Flat_HAdd
 rel_tol = 0.9
 Random.seed!(1)
 stochastic_mask = ExplainMill.explain(StochasticExplainer(), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
-grad_mask = ExplainMill.explain(GradExplainer(), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
+
+
+grad_mask = ExplainMill.explain(DafExplainer(50, true, false, extractor), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
+grad_mask
+
+
 const_mask = ExplainMill.explain(ConstExplainer(), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
 lime_m_mask = ExplainMill.explain(LimeExplainer(sch, extractor, 3, 0.5, "missing"), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
 lime_s_mask = ExplainMill.explain(LimeExplainer(sch, extractor, 3, 0.5, "sample"), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
@@ -187,3 +205,24 @@ end
 open("const.json", "w") do f
     write(f, JSON.json(ExplainMill.e2boolean(dd, const_mask, extractor)))
 end
+
+
+mean([1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0] .== 1)
+my_values = [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0]
+
+my_values2 = [0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1]
+
+mask2 = ExplainMill.create_mask_structure(ds[1], d -> SimpleMask(fill(true, d)))
+fv = ExplainMill.FlatView(mask2)
+for i in 1:length(my_values)
+    fv[i] = my_values2[i]
+end
+result = ExplainMill.e2boolean(ds[1], mask2, extractor)
+json_string = JSON.json(result)
+
+print(json_string)
+
+mi = fv.itemmap[6]
+mask2
+fv.masks[11]
+size(fv.masks[6].x)
