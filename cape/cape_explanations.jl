@@ -21,7 +21,7 @@ include("../datasets/common.jl")
 include("../datasets/loader.jl")
 include("../datasets/stats.jl")
 
-sample_num = 10
+sample_num = 100
 
 model
 soft_model
@@ -62,32 +62,38 @@ exdf = DataFrame()
 # Base.eps(::Type{Any}) = eps(Float32)
 # Base.typemin(::Type{Any}) = typemin(Float32)
 variants = [
-    ("banz", :Flat_HAdd),
-    #("banz", :Flat_HAdd),
-    #("banz", :Flat_HAdd),
-    #("banz", :Flat_HAdd),
-    #("banz", :Flat_HAdd),
-    #("banz", :LbyL_HAdd),
-    # ("lime_3000_s_0.005_b", :Flat_HAdd),
-    # ("lime_100_s_0.05_b", :Flat_HAdd),
-    # ("lime_1000_s_0.05_b", :Flat_HAdd),
-    # ("lime_10_m_0.1_a", :Flat_HAdd),
-    # ("lime_100_m_0.1_a", :Flat_HAdd),
-    # ("lime_1000_m_0.1_a", :Flat_HAdd),
+#("l2-distance_10", :Flat_HAdd),
+#("l2-distance_100", :Flat_HAdd),
+#("l2-distance_1000", :Flat_HAdd),
+# ("l2-distance_5000", :Flat_HAdd),
+    ("stochastic", :Flat_HAdd)
+#("banz", :Flat_HAdd),
+#("banz", :Flat_HAdd),
+#("banz", :Flat_HAdd),
+#("banz", :Flat_HAdd),
+#("banz", :LbyL_HAdd),
+# ("lime_3000_s_0.005_b", :Flat_HAdd),
+# ("lime_100_s_0.05_b", :Flat_HAdd),
+# ("lime_1000_s_0.05_b", :Flat_HAdd),
+# ("lime_10_m_0.1_a", :Flat_HAdd),
+# ("lime_100_m_0.1_a", :Flat_HAdd),
+# ("lime_1000_m_0.1_a", :Flat_HAdd),
 ]
 # variants = getVariants()
 # ds
 # @showprogress "Processing variants..."
 printtree(ds[3])
-og_mk = ExplainMill.create_mask_structure(ds[3], d -> SimpleMask(d))
+og_mk = ExplainMill.create_mask_structure(ds[1], d -> SimpleMask(d))
 printtree(og_mk)
-
+numobs(ds)
 for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
     e = getexplainer(name; sch, extractor)
     @info "explainer $e on $name with $pruning_method"
-    for j in [3]#1:numobs(ds)
+    for j in [2]
         global exdf
         # try
+        exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+        exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
         exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
         # exdf = add_cape_treelime_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
         # catch e
@@ -107,7 +113,7 @@ exdf
 @save "extra_valuable_cape_ex_big.bson" exdf
 # @load "../datasets/extra_valuable_cape_ex_big.bson" exdf
 # exdf
-@load "extra_valuable_cape_ex_big2.bson" exdf
+# @load "extra_valuable_cape_ex_big2.bson" exdf
 
 # exdf
 
@@ -118,3 +124,26 @@ transform!(new_df, :gap => (x -> first.(x)) => :gap, :original_confidence_gap =>
 vscodedisplay(new_df)
 
 
+# Extract the number after "_" in the name
+new_df[!, :number] = [
+    try
+        parse(Int, replace(name, r".*_" => ""))
+    catch
+        1
+    end for name in new_df.name
+]
+
+# Create a new column for the color
+new_df[!, :color] = ifelse.(startswith.(new_df.name, "stochastic"), "red", "blue")
+jitter_factor = 0.8# adjust this as needed
+new_df[!, :number_jittered] = new_df.number .* (1 .+ jitter_factor .* (rand(size(new_df, 1)) .- 0.5))
+new_df[!, :nleaves_jittered] = new_df.nleaves .+ jitter_factor .* (rand(size(new_df, 1)) .- 0.5)
+
+new_df = filter(row -> row.nleaves != 0, new_df)
+# Create the scatter plot with more ticks on the x and y axes
+scatter(new_df[new_df.color.=="red", :number_jittered], new_df[new_df.color.=="red", :nleaves], color="red", label="stochastic", xscale=:log10, yscale=:log10, markersize=2)
+scatter!(new_df[new_df.color.=="blue", :number_jittered], new_df[new_df.color.=="blue", :nleaves], color="blue", label="non-stochastic", xscale=:log10, yscale=:log10, markersize=2,
+    xticks=[1, 10, 100, 1000],
+    yticks=[1, 10, 100, 1000])
+xlabel!("# perturbations")
+ylabel!("# leaves")
