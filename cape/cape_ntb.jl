@@ -15,6 +15,7 @@ using Dates
 using Plots
 using Printf
 using JLD2
+using ExplainMill
 
 # num_samples = 10000
 iterations = 10
@@ -23,11 +24,12 @@ THREADS = Threads.nthreads()
 
 PATH_TO_REPORTS_LOCAL = "/Users/ondrejveres/Diplomka/ExplainMill.jl/data/Avast_cuckoo/"
 PATH_TO_REPORTS = "/mnt/data/jsonlearning/Avast_cuckoo/"
+PATH_TO_REDUCED_REPORTS_LOCAL = PATH_TO_REPORTS_LOCAL * "public_small_reports/"
 PATH_TO_REDUCED_REPORTS = PATH_TO_REPORTS * "public_small_reports/"
 PATH_TO_FULL_REPORTS = PATH_TO_REPORTS * "public_full_reports/"
 PATH_TO_LABELS = "./";
 
-df_labels = CSV.read(PATH_TO_REPORTS * "public_labels.csv", DataFrame);
+df_labels = CSV.read(PATH_TO_REPORTS_LOCAL * "public_labels.csv", DataFrame);
 
 # Group the data by classification_family
 grouped = DataFrames.groupby(df_labels, :classification_family)
@@ -95,7 +97,7 @@ println("Test size: $(test_size)")
 
 jsons = tmap(df_labels.sha256) do s
     try
-        open(JSON.parse, "$(PATH_TO_REDUCED_REPORTS)$(s).json")
+        open(JSON.parse, "$(PATH_TO_REDUCED_REPORTS_LOCAL)$(s).json")
     catch e
         @error "Error when processing sha $s: $e"
     end
@@ -129,11 +131,27 @@ model = reflectinmodel(time_split_complete_schema, extractor,
     fsm=Dict("" => k -> Dense(k, length(labelnames))),
 )
 
-minibatchsize = 10
+minibatchsize = 1
+idx = sample(train_indexes, minibatchsize, replace=false)
+idx_repeated = repeat(idx, inner=10)
 function minibatch()
     idx = sample(train_indexes, minibatchsize, replace=false)
-    reduce(catobs, data[idx]), Flux.onehotbatch(df_labels.classification_family[idx], labelnames)
+    dropout_data = []
+    for i in idx
+        push!(dropout_data, data[i])
+        mk = ExplainMill.create_mask_structure(data[i], d -> ExplainMill.ParticipationTracker(ExplainMill.DafMask(d)))
+        for j in 1:9
+            sample!(mk, Weights([0.5, 0.5]))
+            ExplainMill.updateparticipation!(mk)
+            push!(dropout_data, data[i][mk])
+
+        end
+    end
+    idx_repeated = repeat(idx, inner=10)
+    reduce(catobs, dropout_data), Flux.onehotbatch(df_labels.classification_family[idx_repeated], labelnames)
 end
+
+
 
 function accuracy(x, y)
     vals = tmap(x) do s
@@ -197,7 +215,7 @@ extractor
 data
 
 model
-@save "cape_equal_extractor.jld2" extractor sch data model
+@save "cape_equal_drop_extractor.jld2" extractor sch data model
 @save "cape_model_variables_equal_small.jld2" labelnames df_labels time_split_complete_schema extractor data model
 # using Plots
 # predictions = Flux.onecold(softmax(model(data)))

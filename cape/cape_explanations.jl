@@ -42,7 +42,7 @@ predictions = Flux.onecold((model(ds)))
 # first_indices
 # sorted = sort(first_indices)
 
-exdf = DataFrame()
+# exdf = DataFrame()
 
 # @showprogress 1 "Processing..." for (class, sample_indexes) in pairs(sorted)
 #     @showprogress "Processing samples..." for sample_index in sample_indexes
@@ -62,22 +62,22 @@ exdf = DataFrame()
 # Base.eps(::Type{Any}) = eps(Float32)
 # Base.typemin(::Type{Any}) = typemin(Float32)
 variants = [
-#("l2-distance_10", :Flat_HAdd),
-#("l2-distance_100", :Flat_HAdd),
-#("l2-distance_1000", :Flat_HAdd),
-# ("l2-distance_5000", :Flat_HAdd),
-    ("stochastic", :Flat_HAdd)
-#("banz", :Flat_HAdd),
-#("banz", :Flat_HAdd),
-#("banz", :Flat_HAdd),
-#("banz", :Flat_HAdd),
-#("banz", :LbyL_HAdd),
-# ("lime_3000_s_0.005_b", :Flat_HAdd),
-# ("lime_100_s_0.05_b", :Flat_HAdd),
-# ("lime_1000_s_0.05_b", :Flat_HAdd),
-# ("lime_10_m_0.1_a", :Flat_HAdd),
-# ("lime_100_m_0.1_a", :Flat_HAdd),
-# ("lime_1000_m_0.1_a", :Flat_HAdd),
+    #("l2-distance_10", :Flat_HAdd),
+    #("l2-distance_100", :Flat_HAdd),
+    ("l2-distance_1000", :Flat_HAdd),
+    # ("l2-distance_5000", :Flat_HAdd),
+    # ("stochastic", :Flat_HAdd)
+    #("banz", :Flat_HAdd),
+    #("banz", :Flat_HAdd),
+    #("banz", :Flat_HAdd),
+    #("banz", :Flat_HAdd),
+    #("banz", :LbyL_HAdd),
+    # ("lime_3000_s_0.005_b", :Flat_HAdd),
+    # ("lime_100_s_0.05_b", :Flat_HAdd),
+    # ("lime_1000_s_0.05_b", :Flat_HAdd),
+    # ("lime_10_m_0.1_a", :Flat_HAdd),
+    # ("lime_100_m_0.1_a", :Flat_HAdd),
+    # ("lime_1000_m_0.1_a", :Flat_HAdd),
 ]
 # variants = getVariants()
 # ds
@@ -89,7 +89,7 @@ numobs(ds)
 for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
     e = getexplainer(name; sch, extractor)
     @info "explainer $e on $name with $pruning_method"
-    for j in [2]
+    for j in 10:20
         global exdf
         # try
         exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
@@ -102,7 +102,7 @@ for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
         # end
     end
 end
-
+printtree(ds[1])
 exdf
 #     end
 # end
@@ -110,10 +110,10 @@ exdf
 # printtree(ds[10])
 # logsoft_model(ds[10])
 # vscodedisplay(exdf)
-@save "extra_valuable_cape_ex_big.bson" exdf
+@save "valuable_cape_ex_big.bson" exdf
 # @load "../datasets/extra_valuable_cape_ex_big.bson" exdf
 # exdf
-# @load "extra_valuable_cape_ex_big2.bson" exdf
+@load "valuable_cape_ex_big.bson" exdf
 
 # exdf
 

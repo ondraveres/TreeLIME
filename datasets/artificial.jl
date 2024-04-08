@@ -24,7 +24,7 @@ include("stats.jl")
 _s = ArgParseSettings()
 
 @add_arg_table! _s begin
-    ("--dataset"; default = "deviceid"; arg_type = String)
+    ("--dataset"; default = "mutagenesis"; arg_type = String)
     ("--task"; default = "one_of_1_1trees"; arg_type = String)
     ("--incarnation"; default = 8; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
@@ -61,6 +61,9 @@ sch
 exdf = DataFrame()
 extractor = suggestextractor(sch)
 ds = extractor(samples[10099])
+
+ds
+
 printtree(ds)
 mask = ExplainMill.create_mask_structure(ds, d -> SimpleMask(fill(true, d)))
 fv = ExplainMill.FlatView(mask)
