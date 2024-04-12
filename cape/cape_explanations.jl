@@ -12,7 +12,7 @@ using ProgressMeter
 
 # @time @load "cape_model_variables_equal.jld2" labelnames df_labels time_split_complete_schema extractor data model #takes 11 minutes
 # supertype(supertype(typeof(sch)))
-@time @load "cape_equal_extractor.jld2" extractor sch model data #takes 15 minutes
+@time @load "cape_equal_dropout_extractor2.jld2" extractor sch model data #takes 11 minutes
 printtree(sch)
 printtree(extractor)
 
@@ -21,28 +21,30 @@ include("../datasets/common.jl")
 include("../datasets/loader.jl")
 include("../datasets/stats.jl")
 
-sample_num = 100
+sample_num = 1000
 
 model
 soft_model
 logsoft_model
 statlayer = StatsLayer()
 model = @set model.m = Chain(model.m, statlayer)
-soft_model = @set model.m = Chain(model.m, softmax)
+# soft_model = @set model.m = Chain(model.m, softmax)
 logsoft_model = @set model.m = Chain(model.m, logsoftmax)
 Random.seed!(1)
 
 
+shuffled_data = shuffle(data)
 
-ds = data[1:min(numobs(data), sample_num)]
+ds = shuffled_data[1:min(numobs(data), sample_num)]
 model_variant_k = 3
 
 predictions = Flux.onecold((model(ds)))
+println(predictions)
 # first_indices = Dict(value => findall(==(value), predictions)[1:min(end, 100)] for value in unique(predictions))
 # first_indices
 # sorted = sort(first_indices)
 
-# exdf = DataFrame()
+exdf = DataFrame()
 
 # @showprogress 1 "Processing..." for (class, sample_indexes) in pairs(sorted)
 #     @showprogress "Processing samples..." for sample_index in sample_indexes
@@ -63,8 +65,8 @@ predictions = Flux.onecold((model(ds)))
 # Base.typemin(::Type{Any}) = typemin(Float32)
 variants = [
     #("l2-distance_10", :Flat_HAdd),
-    #("l2-distance_100", :Flat_HAdd),
-    ("l2-distance_1000", :Flat_HAdd),
+    ("l2-distance_300", :Flat_HAdd),
+    #("l2-distance_1000", :Flat_HAdd),
     # ("l2-distance_5000", :Flat_HAdd),
     # ("stochastic", :Flat_HAdd)
     #("banz", :Flat_HAdd),
@@ -82,19 +84,40 @@ variants = [
 # variants = getVariants()
 # ds
 # @showprogress "Processing variants..."
+
 printtree(ds[3])
-og_mk = ExplainMill.create_mask_structure(ds[1], d -> SimpleMask(d))
-printtree(og_mk)
-numobs(ds)
+mk = ExplainMill.create_mask_structure(ds[5], d -> SimpleMask(d))
+
+
+globat_flat_view = ExplainMill.FlatView(mk)
+globat_flat_view.itemmap
+max_depth = maximum(item.level for item in globat_flat_view.itemmap)
+items_ids_at_level = []
+mask_ids_at_level = []
+for depth in 1:max_depth
+    current_depth_itemmap = filter(mask -> mask.level == depth, globat_flat_view.itemmap)
+    current_depth_item_ids = [item.itemid for item in current_depth_itemmap]
+    current_depth_mask_ids = unique([item.itemid for item in current_depth_itemmap])
+
+    push!(items_ids_at_level, current_depth_item_ids)
+    push!(mask_ids_at_level, current_depth_mask_ids)
+end
+items_ids_at_level[1]
+level_one_masks_itemmap = filter(mask -> mask.level == 1, globat_flat_view.itemmap)
+level_one_items_ids = [item.itemid for item in level_one_masks_itemmap]
+level_one_mask_ids = [item.maskid for item in level_one_masks_itemmap]
+flat_first_level = vcat((mask.m.x for mask in globat_flat_view.masks[unique_mask_ids])...)
+
+
 for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
     e = getexplainer(name; sch, extractor)
     @info "explainer $e on $name with $pruning_method"
-    for j in 10:20
+    for j in [5]
         global exdf
         # try
         exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-        exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-        exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+        #exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+        #exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
         # exdf = add_cape_treelime_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
         # catch e
         #     println("fail")
@@ -124,6 +147,9 @@ transform!(new_df, :gap => (x -> first.(x)) => :gap, :original_confidence_gap =>
 vscodedisplay(new_df)
 
 
+
+
+
 # Extract the number after "_" in the name
 new_df[!, :number] = [
     try
@@ -135,7 +161,7 @@ new_df[!, :number] = [
 
 # Create a new column for the color
 new_df[!, :color] = ifelse.(startswith.(new_df.name, "stochastic"), "red", "blue")
-jitter_factor = 0.8# adjust this as needed
+jitter_factor = 0.0001# adjust this as needed
 new_df[!, :number_jittered] = new_df.number .* (1 .+ jitter_factor .* (rand(size(new_df, 1)) .- 0.5))
 new_df[!, :nleaves_jittered] = new_df.nleaves .+ jitter_factor .* (rand(size(new_df, 1)) .- 0.5)
 

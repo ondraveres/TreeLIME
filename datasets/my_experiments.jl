@@ -38,7 +38,11 @@ settings = NamedTuple{Tuple(keys(settings))}(values(settings))
 
 samples, labels, concepts = loaddata(settings)
 labels = vcat(labels, fill(2, length(concepts)))
+
+
 samples = vcat(samples, concepts)
+
+samples[3]
 
 resultsdir(s...) = joinpath("..", "..", "data", "sims", settings.dataset, settings.task, "$(settings.incarnation)", s...)
 ###############################################################
@@ -90,40 +94,40 @@ good_model, concept_gap = nothing, 0
 # good_model, concept_gap
 labels[1]
 JSON.parse("{}")
-model = reflectinmodel(
-    sch,
-    extractor,
-    d -> Dense(d, model_variant_k, relu),
-    all_imputing=true
-)
-model = @set model.m = Chain(model.m, Dense(model_variant_k, 2))
-for i in 1:2
-    @info "start of epoch $i"
-    opt = ADAM()
-    ps = Flux.params(model)
-    loss = (x, y) -> Flux.logitcrossentropy(model(x), y)
-    data_loader = Flux.DataLoader((trndata, Flux.onehotbatch(labels, 1:2)), batchsize=2000, shuffle=true)
-    Flux.Optimise.train!(loss, ps, data_loader, opt)
-    soft_model = @set model.m = Chain(model.m, softmax)
-    cg = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), 2)[1, 1], concepts))
-    eg = ExplainMill.confidencegap(soft_model, extractor(JSON.parse("{}")), 1)[1, 1]
-    predictions = model(trndata)
-    accuracy(ds, y) = mean(Flux.onecold(model(ds)) .== y)
-    acc = mean(Flux.onecold(predictions) .== labels)
-    @info "crossentropy on all samples = ", Flux.logitcrossentropy(predictions, Flux.onehotbatch(labels, 1:2)),
-    @info "accuracy on all samples = ", acc
-    @info "minimum gap on concepts = $(cg) on empty sample = $(eg)"
-    @info "accuracy on concepts = $( accuracy(extractor.(concepts), 2)))"
-    @info "end of epoch $i"
-    flush(stdout)
-    if (acc > 0.999)
-        break
-    end
-end
-if concept_gap < 0
-    error("Failed to train a model")
-end
-BSON.@save resultsdir(model_name) model extractor sch
+# model = reflectinmodel(
+#     sch,
+#     extractor,
+#     d -> Dense(d, model_variant_k, relu),
+#     all_imputing=true
+# )
+# model = @set model.m = Chain(model.m, Dense(model_variant_k, 2))
+# for i in 1:200
+#     @info "start of epoch $i"
+#     opt = ADAM()
+#     ps = Flux.params(model)
+#     loss = (x, y) -> Flux.logitcrossentropy(model(x), y)
+#     data_loader = Flux.DataLoader((trndata, Flux.onehotbatch(labels, 1:2)), batchsize=2000, shuffle=true)
+#     Flux.Optimise.train!(loss, ps, data_loader, opt)
+#     soft_model = @set model.m = Chain(model.m, softmax)
+#     cg = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), 2)[1, 1], concepts))
+#     eg = ExplainMill.confidencegap(soft_model, extractor(JSON.parse("{}")), 1)[1, 1]
+#     predictions = model(trndata)
+#     accuracy(ds, y) = mean(Flux.onecold(model(ds)) .== y)
+#     acc = mean(Flux.onecold(predictions) .== labels)
+#     @info "crossentropy on all samples = ", Flux.logitcrossentropy(predictions, Flux.onehotbatch(labels, 1:2)),
+#     @info "accuracy on all samples = ", acc
+#     @info "minimum gap on concepts = $(cg) on empty sample = $(eg)"
+#     @info "accuracy on concepts = $( accuracy(extractor.(concepts), 2)))"
+#     @info "end of epoch $i"
+#     flush(stdout)
+#     if (acc > 0.999)
+#         break
+#     end
+# end
+# if concept_gap < 0
+#     error("Failed to train a model")
+# end
+# BSON.@save resultsdir(model_name) model extractor sch
 # end
 
 labels
@@ -136,14 +140,13 @@ logsoft_model = @set model.m = Chain(model.m, logsoftmax)
 my_class_indexes = PrayTools.classindexes(labels)
 Random.seed!(120)
 strain = 2
-my_ds =
-    ds = loadclass(strain, my_class_indexes, sample_num)
+ds = loadclass(strain, my_class_indexes, sample_num)
 i = strain
 concept_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], concepts))
 sample_gap = minimum(map(c -> ExplainMill.confidencegap(soft_model, extractor(c), i)[1, 1], samples[labels.==2]))
 threshold_gap = 0.2
 correct_ds = onlycorrect(ds, strain, soft_model, 0.1)
-ds = correct_ds
+# ds = correct_ds
 @info "minimum gap on concepts = $(concept_gap) on samples = $(sample_gap)"
 
 
@@ -178,7 +181,12 @@ dd = extractor(samples[10099], store_input=true)
 mask = ExplainMill.create_mask_structure(dd, d -> SimpleMask(fill(true, d)))
 mask = ExplainMill.create_mask_structure(dd, d -> SimpleMask(fill(true, d)))
 
-mk = ExplainMill.create_mask_structure(dd, d -> SimpleMask(ones(Float32, d)))
+mk = ExplainMill.create_mask_structure(dd, d -> SimpleMask(ones(Bool, d)))
+
+printtree(mk)
+
+model(dd)
+
 fv = ExplainMill.FlatView(mk)
 
 ranking = [15, 30, 5, 12, 17, 2, 10, 23, 19, 18, 26, 24, 11, 25, 7, 21, 31, 4, 6, 13, 14, 1, 20, 9, 27, 16, 29, 8, 3, 22, 28]
@@ -197,7 +205,7 @@ stochastic_mask = ExplainMill.explain(StochasticExplainer(), dd, logsoft_model, 
 
 printtree(stochastic_mask)
 
-grad_mask = ExplainMill.explain(DafExplainer(50, true, false, extractor), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
+grad_mask = ExplainMill.explain(DafExplainer(200, true, false, extractor), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
 printtree(grad_mask)
 
 model()
@@ -206,7 +214,7 @@ const_mask = ExplainMill.explain(ConstExplainer(), dd, logsoft_model, i, pruning
 lime_m_mask = ExplainMill.explain(LimeExplainer(sch, extractor, 3, 0.5, "missing"), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
 lime_s_mask = ExplainMill.explain(LimeExplainer(sch, extractor, 3, 0.5, "sample"), dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
 open("lime_m.json", "w") do f
-    write(f, JSON.json(ExplainMill.e2boolean(dd, lime_m_mask, extractor)))
+    write(f, JSON.json(ExplainMill.e2boolean(dd, mask, extractor)))
 end
 open("lime_s.json", "w") do f
     write(f, JSON.json(ExplainMill.e2boolean(dd, lime_s_mask, extractor)))

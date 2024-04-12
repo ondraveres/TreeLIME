@@ -53,6 +53,8 @@ function getexplainer(name; sch=nothing, extractor=nothing)
         return ExplainMill.ConstExplainer()
     elseif name == "gnn"
         return ExplainMill.GnnExplainer()
+    elseif name == "banz"
+        return ExplainMill.DafExplainer(100)
     elseif startswith(name, "l2-distance")
         split_name = split(name, "_")
         perturbation_count = parse(Float64, split_name[2])

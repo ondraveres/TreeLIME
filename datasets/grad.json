@@ -1,11 +1,1 @@
-{
-    "services": [
-        {
-            "protocol": "udp"
-        }
-    ],
-    "ssdp": [],
-    "upnp": [],
-    "dhcp": [],
-    "mdns_services": []
-}
+{"services":[{"port":1900}],"ssdp":[],"upnp":[],"dhcp":[],"mdns_services":[]}

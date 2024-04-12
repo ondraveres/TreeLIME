@@ -111,6 +111,11 @@ end
 time_split_complete_schema = merge(sch_parts...)
 time_split_complete_schema
 sch = JsonGrinder.schema(vcat(jsons, Dict()))
+json = jsons[1]
+json["behavior"]["summary"]
+function generate_label(json)
+
+end
 
 # printtree(time_split_complete_schema)
 # import JsonGrinder: generate_html
@@ -122,6 +127,8 @@ data = tmap(json -> extractor(json, store_input=true), jsons);
 function Mill.catobs(a::Any, b::Any)
     cat(a, b, dims=1)
 end
+
+
 
 labelnames = sort(unique(df_labels.classification_family))
 neurons = 32
