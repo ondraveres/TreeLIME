@@ -65,7 +65,7 @@ exdf = DataFrame()
 # Base.typemin(::Type{Any}) = typemin(Float32)
 variants = [
     #("l2-distance_10", :Flat_HAdd),
-    ("l2-distance_300", :Flat_HAdd),
+    ("l2-distance_200", :Flat_HAdd),
     #("l2-distance_1000", :Flat_HAdd),
     # ("l2-distance_5000", :Flat_HAdd),
     # ("stochastic", :Flat_HAdd)
@@ -84,35 +84,15 @@ variants = [
 # variants = getVariants()
 # ds
 # @showprogress "Processing variants..."
-
 printtree(ds[3])
 mk = ExplainMill.create_mask_structure(ds[5], d -> SimpleMask(d))
 
-
-globat_flat_view = ExplainMill.FlatView(mk)
-globat_flat_view.itemmap
-max_depth = maximum(item.level for item in globat_flat_view.itemmap)
-items_ids_at_level = []
-mask_ids_at_level = []
-for depth in 1:max_depth
-    current_depth_itemmap = filter(mask -> mask.level == depth, globat_flat_view.itemmap)
-    current_depth_item_ids = [item.itemid for item in current_depth_itemmap]
-    current_depth_mask_ids = unique([item.itemid for item in current_depth_itemmap])
-
-    push!(items_ids_at_level, current_depth_item_ids)
-    push!(mask_ids_at_level, current_depth_mask_ids)
-end
-items_ids_at_level[1]
-level_one_masks_itemmap = filter(mask -> mask.level == 1, globat_flat_view.itemmap)
-level_one_items_ids = [item.itemid for item in level_one_masks_itemmap]
-level_one_mask_ids = [item.maskid for item in level_one_masks_itemmap]
-flat_first_level = vcat((mask.m.x for mask in globat_flat_view.masks[unique_mask_ids])...)
 
 
 for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
     e = getexplainer(name; sch, extractor)
     @info "explainer $e on $name with $pruning_method"
-    for j in [5]
+    for j in [2]
         global exdf
         # try
         exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)

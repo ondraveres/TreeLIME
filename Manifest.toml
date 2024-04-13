@@ -541,7 +541,7 @@ uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
 version = "2.5.0+0"
 
 [[deps.ExplainMill]]
-deps = ["ArgParse", "ChainRulesCore", "Clustering", "DataStructures", "Distances", "Duff", "Flux", "GLMNet", "HierarchicalUtils", "JSON", "JsonGrinder", "Mill", "Random", "Revise", "Setfield", "SparseArrays", "StatsBase"]
+deps = ["ArgParse", "ChainRulesCore", "Clustering", "DataStructures", "Distances", "Duff", "Flux", "GLMNet", "HierarchicalUtils", "JLD2", "JSON", "JsonGrinder", "Mill", "Plots", "Random", "Revise", "Setfield", "SparseArrays", "StatsBase"]
 path = "../../ExplainMill.jl"
 uuid = "a2c437b0-bf6b-41a1-8a62-162a814afa99"
 version = "0.0.1"
