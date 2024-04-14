@@ -63,27 +63,27 @@ exdf = DataFrame()
 # end
 # Base.eps(::Type{Any}) = eps(Float32)
 # Base.typemin(::Type{Any}) = typemin(Float32)
-variants = [
-    ("l2-distance_10", :Flat_HAdd),
-    ("l2-distance_50", :Flat_HAdd),
-    ("l2-distance_100", :Flat_HAdd),
-    ("l2-distance_200", :Flat_HAdd),
-    ("l2-distance_400", :Flat_HAdd),
-    ("l2-distance_1000", :Flat_HAdd),
-    # ("l2-distance_5000", :Flat_HAdd),
-    # ("stochastic", :Flat_HAdd)
-    #("banz", :Flat_HAdd),
-    #("banz", :Flat_HAdd),
-    #("banz", :Flat_HAdd),
-    #("banz", :Flat_HAdd),
-    #("banz", :LbyL_HAdd),
-    # ("lime_3000_s_0.005_b", :Flat_HAdd),
-    # ("lime_100_s_0.05_b", :Flat_HAdd),
-    # ("lime_1000_s_0.05_b", :Flat_HAdd),
-    # ("lime_10_m_0.1_a", :Flat_HAdd),
-    # ("lime_100_m_0.1_a", :Flat_HAdd),
-    # ("lime_1000_m_0.1_a", :Flat_HAdd),
-]
+# variants = [
+#     ("layered_10", :Flat_HAdd),
+#     ("layered_50", :Flat_HAdd),
+#     ("layered_100", :Flat_HAdd),
+#     ("layered_200", :Flat_HAdd),
+#     ("layered_400", :Flat_HAdd),
+#     ("layered_1000", :Flat_HAdd),]
+# variants = [
+#     ("flat_10", :Flat_HAdd),
+#     ("flat_50", :Flat_HAdd),
+#     ("flat_100", :Flat_HAdd),
+#     ("flat_200", :Flat_HAdd),
+#     ("flat_400", :Flat_HAdd),
+#     ("flat_1000", :Flat_HAdd),
+# ]
+variants = []
+for n in [10000]
+    push!(variants, ("layered_$(n)", :Flat_HAdd))
+    # push!(variants, ("flat_$(n)", :Flat_HAdd))
+end
+
 # variants = getVariants()
 # ds
 # @showprogress "Processing variants..."
