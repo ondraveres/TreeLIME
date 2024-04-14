@@ -79,7 +79,7 @@ exdf = DataFrame()
 #     ("flat_1000", :Flat_HAdd),
 # ]
 variants = []
-for n in [10, 100, 200, 400, 1000]
+for n in [10, 100, 200, 400, 1000, 10000, 100000, 200000]
     push!(variants, ("layered_$(n)", :Flat_HAdd))
     # push!(variants, ("flat_$(n)", :Flat_HAdd))
 end

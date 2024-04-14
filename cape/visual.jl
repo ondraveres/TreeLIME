@@ -4,9 +4,11 @@ using JLD2
 
 
 plots = []
+@load "cg_lambda_plot_1000_false_3.jld2" lambdas cgs non_zero_lengths
+non_zero_lengths
 
 # for n in [10, 50, 100, 200, 400, 1000, 5000, 10000]
-for n in [200]
+for n in [10, 100, 200, 1000]
     for l in [1, 2, 3]
         @load "cg_lambda_plot_$(n)_false_$(l).jld2" lambdas cgs non_zero_lengths
         ticks = range(minimum(non_zero_lengths), maximum(non_zero_lengths), step=10)
