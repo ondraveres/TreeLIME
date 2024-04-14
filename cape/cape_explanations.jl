@@ -79,7 +79,7 @@ exdf = DataFrame()
 #     ("flat_1000", :Flat_HAdd),
 # ]
 variants = []
-for n in [200]
+for n in [10, 100, 200, 400, 1000]
     push!(variants, ("layered_$(n)", :Flat_HAdd))
     # push!(variants, ("flat_$(n)", :Flat_HAdd))
 end
@@ -112,15 +112,15 @@ for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
     @info "explainer $e on $name with $pruning_method"
     for j in [23]
         global exdf
-        # try
-        exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-        #exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-        #exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-        # exdf = add_cape_treelime_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-        # catch e
-        #     println("fail")
-        #     println(e)
-        # end
+        try
+            exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+            #exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+            #exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+            # exdf = add_cape_treelime_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+        catch e
+            println("fail")
+            println(e)
+        end
     end
 end
 printtree(ds[1])

@@ -33,7 +33,7 @@ for n in [200]
 end
 
 # Combine the plots in a 2 by 3 grid
-p = plot(plots..., layout=grid(5, 2), size=(1000, 1000))
+p = plot(plots..., layout=grid(5, 3), size=(1500, 1000))
 
 # Display the plot
 display(p)
