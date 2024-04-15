@@ -115,9 +115,9 @@ function add_cape_experiment(exdf, e, dd, logsoft_model, class_to_explain, rel_t
     vcat(exdf, DataFrame([s]))
 end
 
-function add_cape_treelime_experiment(exdf, e, dd, logsoft_model, class_to_explain, rel_tol, name, pruning_method, sampleno, statlayer::StatsLayer, extractor, model_variant_k=1)
+function add_cape_treelime_experiment(exdf, e::ExplainMill.TreeLimeExplainer, dd::AbstractMillNode, logsoft_model::AbstractMillModel, class_to_explain, rel_tol, name, pruning_method, sampleno, statlayer::StatsLayer, extractor, model_variant_k=1)
     reset!(statlayer)
-    t = @elapsed ms = treelime(e::TreeLimeExplainer, dd, model::AbstractMillModel, extractor)
+    t = @elapsed ms = ExplainMill.treelime(e::ExplainMill.TreeLimeExplainer, dd::AbstractMillNode, model::AbstractMillModel, extractor)
     s = merge((
             name=name,
             pruning_method="treelime",

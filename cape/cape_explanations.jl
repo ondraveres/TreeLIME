@@ -15,7 +15,7 @@ using ProgressMeter
 include("../datasets/common.jl")
 include("../datasets/loader.jl")
 include("../datasets/stats.jl")
-include("../treelime.jl")
+
 
 sample_num = 1000
 
@@ -40,8 +40,8 @@ println(predictions)
 
 
 variants = []
-for n in [10, 100, 200, 400,]# 1000, 10000, 100000, 200000]
-    push!(variants, ("lime_$(n)_1_layered_UP", :Flat_HAdd))
+for n in [100]#, 200, 400,]# 1000, 10000, 100000, 200000]
+    push!(variants, ("lime_$(n)_3_layered_DOWN", :Flat_HAdd))
     # push!(variants, ("flat_$(n)", :Flat_HAdd))
 end
 
@@ -68,7 +68,7 @@ function getexplainer(name; sch=nothing, extractor=nothing)
         round_count = parse(Float64, split_name[3])
         lime_type = parse_lime_type(split_name[4])
         direction = parse_direction(split_name[5])
-        return TreeLimeExplainer(perturbation_count, round_count, lime_type, direction)
+        return ExplainMill.TreeLimeExplainer(perturbation_count, round_count, lime_type, direction)
     else
         error("unknown eplainer $name")
     end
@@ -89,8 +89,8 @@ function parse_direction(s::Union{String,SubString{String}})
         error("Invalid Direction: $s")
     end
 end
-const LIME_TYPE_DICT = Dict(:FLAT => FLAT, :LAYERED => LAYERED)
-const DIRECTION_DICT = Dict(:UP => UP, :DOWN => DOWN)
+LIME_TYPE_DICT = Dict(:FLAT => ExplainMill.FLAT, :LAYERED => ExplainMill.LAYERED)
+DIRECTION_DICT = Dict(:UP => ExplainMill.UP, :DOWN => ExplainMill.DOWN)
 exdf = DataFrame()
 typeof(ds[23])
 for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
@@ -98,7 +98,7 @@ for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
     @info "explainer $e on $name with $pruning_method"
     for j in [23]
         global exdf
-        if e isa TreeLimeExplainer
+        if e isa ExplainMill.TreeLimeExplainer
             exdf = add_cape_treelime_experiment(exdf, e, ds[j][1], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
         else
             exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
