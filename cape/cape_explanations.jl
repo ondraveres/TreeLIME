@@ -10,16 +10,12 @@ using ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, Pray
 using ExplainMill: jsondiff, nnodes, nleaves
 using ProgressMeter
 
-# @time @load "cape_model_variables_equal.jld2" labelnames df_labels time_split_complete_schema extractor data model #takes 11 minutes
-# supertype(supertype(typeof(sch)))
 @time @load "cape_equal_dropout_extractor2.jld2" extractor sch model data #takes 11 minutes
-printtree(sch)
-printtree(extractor)
-
 
 include("../datasets/common.jl")
 include("../datasets/loader.jl")
 include("../datasets/stats.jl")
+include("../treelime.jl")
 
 sample_num = 1000
 
@@ -40,86 +36,72 @@ model_variant_k = 3
 
 predictions = Flux.onecold((model(ds)))
 println(predictions)
-# first_indices = Dict(value => findall(==(value), predictions)[1:min(end, 100)] for value in unique(predictions))
-# first_indices
-# sorted = sort(first_indices)
 
-exdf = DataFrame()
 
-# @showprogress 1 "Processing..." for (class, sample_indexes) in pairs(sorted)
-#     @showprogress "Processing samples..." for sample_index in sample_indexes
-# @showprogress "Processing observations..." for j in 1:numobs(ds)
-#     for c in [0.5]
-#         global exdf
-#         exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10, model_variant_k, c, "sample")
-#         exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 100, model_variant_k, c, "missing")
-#         exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 100, model_variant_k, c, "sample")
-#         exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10, model_variant_k, c, "missing")
-#         #exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 1000, model_variant_k, c, "missing")
-#         #exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 1000, model_variant_k, c, "sample")
-#         #exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10000, model_variant_k, c, "missing")
-#         #exdf = add_cape_treelime_experiment(exdf, ds[j], logsoft_model, predictions[j], j, statlayer, extractor, sch, 10000, model_variant_k, c, "sample")
-#     end
-# end
-# Base.eps(::Type{Any}) = eps(Float32)
-# Base.typemin(::Type{Any}) = typemin(Float32)
-# variants = [
-#     ("layered_10", :Flat_HAdd),
-#     ("layered_50", :Flat_HAdd),
-#     ("layered_100", :Flat_HAdd),
-#     ("layered_200", :Flat_HAdd),
-#     ("layered_400", :Flat_HAdd),
-#     ("layered_1000", :Flat_HAdd),]
-# variants = [
-#     ("flat_10", :Flat_HAdd),
-#     ("flat_50", :Flat_HAdd),
-#     ("flat_100", :Flat_HAdd),
-#     ("flat_200", :Flat_HAdd),
-#     ("flat_400", :Flat_HAdd),
-#     ("flat_1000", :Flat_HAdd),
-# ]
+
 variants = []
-for n in [10, 100, 200, 400, 1000, 10000, 100000, 200000]
-    push!(variants, ("layered_$(n)", :Flat_HAdd))
+for n in [10, 100, 200, 400,]# 1000, 10000, 100000, 200000]
+    push!(variants, ("lime_$(n)_1_layered_UP", :Flat_HAdd))
     # push!(variants, ("flat_$(n)", :Flat_HAdd))
 end
 
-# variants = getVariants()
-# ds
-# @showprogress "Processing variants..."
 printtree(ds[3])
 mk = ExplainMill.create_mask_structure(ds[23], d -> SimpleMask(d))
 
 predictions[23]
-globat_flat_view = ExplainMill.FlatView(mk)
-globat_flat_view.itemmap
-max_depth = maximum(item.level for item in globat_flat_view.itemmap)
-items_ids_at_level = []
-mask_ids_at_level = []
-for depth in 1:max_depth
-    current_depth_itemmap = filter(mask -> mask.level == depth, globat_flat_view.itemmap)
-    current_depth_item_ids = [item.itemid for item in current_depth_itemmap]
-    current_depth_mask_ids = unique([item.itemid for item in current_depth_itemmap])
 
-    push!(items_ids_at_level, current_depth_item_ids)
-    push!(mask_ids_at_level, current_depth_mask_ids)
+
+function getexplainer(name; sch=nothing, extractor=nothing)
+    if name == "stochastic"
+        return ExplainMill.StochasticExplainer()
+    elseif name == "grad"
+        return ExplainMill.GradExplainer()
+    elseif name == "const"
+        return ExplainMill.ConstExplainer()
+    elseif name == "gnn"
+        return ExplainMill.GnnExplainer()
+    elseif name == "banz"
+        return ExplainMill.DafExplainer(100)
+    elseif startswith(name, "lime")
+        split_name = split(name, "_")
+        perturbation_count = parse(Float64, split_name[2])
+        round_count = parse(Float64, split_name[3])
+        lime_type = parse_lime_type(split_name[4])
+        direction = parse_direction(split_name[5])
+        return TreeLimeExplainer(perturbation_count, round_count, lime_type, direction)
+    else
+        error("unknown eplainer $name")
+    end
 end
-items_ids_at_level[1]
-
-
+function parse_lime_type(s::Union{String,SubString{String}})
+    symbol = Symbol(uppercase(String(s)))
+    if haskey(LIME_TYPE_DICT, symbol)
+        return LIME_TYPE_DICT[symbol]
+    else
+        error("Invalid LimeType: $s")
+    end
+end
+function parse_direction(s::Union{String,SubString{String}})
+    symbol = Symbol(uppercase(String(s)))
+    if haskey(DIRECTION_DICT, symbol)
+        return DIRECTION_DICT[symbol]
+    else
+        error("Invalid Direction: $s")
+    end
+end
+const LIME_TYPE_DICT = Dict(:FLAT => FLAT, :LAYERED => LAYERED)
+const DIRECTION_DICT = Dict(:UP => UP, :DOWN => DOWN)
+exdf = DataFrame()
+typeof(ds[23])
 for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
-    e = getexplainer(name; sch, extractor)
+    e = getexplainer(name;)
     @info "explainer $e on $name with $pruning_method"
     for j in [23]
         global exdf
-        try
+        if e isa TreeLimeExplainer
+            exdf = add_cape_treelime_experiment(exdf, e, ds[j][1], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+        else
             exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-            #exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-            #exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-            # exdf = add_cape_treelime_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-        catch e
-            println("fail")
-            println(e)
         end
     end
 end

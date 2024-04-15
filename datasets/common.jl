@@ -44,35 +44,7 @@ function getVariants()
     )
 end
 
-function getexplainer(name; sch=nothing, extractor=nothing)
-    if name == "stochastic"
-        return ExplainMill.StochasticExplainer()
-    elseif name == "grad"
-        return ExplainMill.GradExplainer()
-    elseif name == "const"
-        return ExplainMill.ConstExplainer()
-    elseif name == "gnn"
-        return ExplainMill.GnnExplainer()
-    elseif name == "banz"
-        return ExplainMill.DafExplainer(100)
-    elseif startswith(name, "flat")
-        split_name = split(name, "_")
-        perturbation_count = parse(Float64, split_name[2])
-        return ExplainMill.DafExplainer(perturbation_count, true, false, extractor, true)
-    elseif startswith(name, "layered")
-        split_name = split(name, "_")
-        perturbation_count = parse(Float64, split_name[2])
-        return ExplainMill.DafExplainer(perturbation_count, true, false, extractor, false)
-    elseif startswith(name, "lime")
-        split_name = split(name, "_")
-        perturbation_count = parse(Float64, split_name[2])
-        perturbation_strategy = split_name[3] == "m" ? "missing" : "sample"
-        chance = parse(Float64, split_name[4])
-        return ExplainMill.LimeExplainer(sch, extractor, perturbation_count, chance, perturbation_strategy)
-    else
-        error("unknown eplainer $name")
-    end
-end
+
 function loadclass(k, my_class_indexes, n=typemax(Int))
     dss = map(s -> extractor(s, store_input=true), sample(samples[my_class_indexes[k]], min(n, length(my_class_indexes[k])), replace=false))
     reduce(catobs, dss)
