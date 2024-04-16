@@ -40,10 +40,13 @@ println(predictions)
 
 
 variants = []
-for n in [100]#, 200, 400,]# 1000, 10000, 100000, 200000]
-    push!(variants, ("lime_$(n)_3_layered_DOWN", :Flat_HAdd))
+for n in [200]
+    push!(variants, ("lime_$(n)_1_layered_UP", :Flat_HAdd))
+    # push!(variants, ("lime_$(n)_1_layered_DOWN", :Flat_HAdd))
     # push!(variants, ("flat_$(n)", :Flat_HAdd))
 end
+
+push!(variants, ("banz", :Flat_HAdd))
 
 printtree(ds[3])
 mk = ExplainMill.create_mask_structure(ds[23], d -> SimpleMask(d))
@@ -133,23 +136,24 @@ vscodedisplay(new_df)
 # Extract the number after "_" in the name
 new_df[!, :number] = [
     try
-        parse(Int, replace(name, r".*_" => ""))
+        split_name = split(name, "_")
+        perturbation_count = parse(Int32, split_name[2])
     catch
-        1
+        100
     end for name in new_df.name
 ]
 
 # Create a new column for the color
-new_df[!, :color] = ifelse.(startswith.(new_df.name, "stochastic"), "red", "blue")
-jitter_factor = 0.0001# adjust this as needed
+new_df[!, :color] = ifelse.(startswith.(new_df.name, "lime"), "red", "blue")
+jitter_factor = 0.05# adjust this as needed
 new_df[!, :number_jittered] = new_df.number .* (1 .+ jitter_factor .* (rand(size(new_df, 1)) .- 0.5))
-new_df[!, :nleaves_jittered] = new_df.nleaves .+ jitter_factor .* (rand(size(new_df, 1)) .- 0.5)
+new_df[!, :nleaves_jittered] = new_df.nleaves .* jitter_factor .* (rand(size(new_df, 1)) .- 0.5)
 
-new_df = filter(row -> row.nleaves != 0, new_df)
+# new_df = filter(row -> row.nleaves != 0, new_df)
 # Create the scatter plot with more ticks on the x and y axes
-scatter(new_df[new_df.color.=="red", :number_jittered], new_df[new_df.color.=="red", :nleaves], color="red", label="stochastic", xscale=:log10, yscale=:log10, markersize=2)
-scatter!(new_df[new_df.color.=="blue", :number_jittered], new_df[new_df.color.=="blue", :nleaves], color="blue", label="non-stochastic", xscale=:log10, yscale=:log10, markersize=2,
-    xticks=[1, 10, 100, 1000],
-    yticks=[1, 10, 100, 1000])
+scatter(new_df[new_df.color.=="red", :number_jittered], new_df[new_df.color.=="red", :nleaves], color="red", label="TreeLime", yscale=:log10, markersize=2)
+scatter!(new_df[new_df.color.=="blue", :number_jittered], new_df[new_df.color.=="blue", :nleaves], color="blue", label="Banz", yscale=:log10, markersize=2,
+    xticks=[100, 200],
+    yticks=[100, 200])
 xlabel!("# perturbations")
 ylabel!("# leaves")
