@@ -40,18 +40,18 @@ println(predictions)
 
 
 variants = []
-for n in [200]
-    push!(variants, ("lime_$(n)_1_layered_UP", :Flat_HAdd))
+for n in [200, 1000]
+    push!(variants, ("lime_$(n)_1_Flat_UP", :Flat_HAdd))
     # push!(variants, ("lime_$(n)_1_layered_DOWN", :Flat_HAdd))
-    # push!(variants, ("flat_$(n)", :Flat_HAdd))
+    #push!(variants, ("lime_$(n)_1_layered_UP", :Flat_HAdd))
 end
 
-push!(variants, ("banz", :Flat_HAdd))
+# push!(variants, ("banz", :Flat_HAdd))
 
 printtree(ds[3])
 mk = ExplainMill.create_mask_structure(ds[23], d -> SimpleMask(d))
 
-predictions[23]
+predictions
 
 
 function getexplainer(name; sch=nothing, extractor=nothing)
@@ -89,17 +89,17 @@ function parse_direction(s::Union{String,SubString{String}})
     if haskey(DIRECTION_DICT, symbol)
         return DIRECTION_DICT[symbol]
     else
-        error("Invalid Direction: $s")
+        return DIRECTION_DICT[:UP]
     end
 end
 LIME_TYPE_DICT = Dict(:FLAT => ExplainMill.FLAT, :LAYERED => ExplainMill.LAYERED)
 DIRECTION_DICT = Dict(:UP => ExplainMill.UP, :DOWN => ExplainMill.DOWN)
-exdf = DataFrame()
-typeof(ds[23])
+# exdf = DataFrame()
+variants
 for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
     e = getexplainer(name;)
     @info "explainer $e on $name with $pruning_method"
-    for j in [23]
+    for j in [1]
         global exdf
         if e isa ExplainMill.TreeLimeExplainer
             exdf = add_cape_treelime_experiment(exdf, e, ds[j][1], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
@@ -110,26 +110,37 @@ for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
 end
 printtree(ds[1])
 exdf
+vscodedisplay(exdf)
+
+filtered_df = filter(row -> row[:nleaves] == 0, new_df)
+sampleno_values = filtered_df[!, :sampleno]
+unique(predictions[sampleno_values])
+predictions[2]
+indices = findall(x -> x == 9, predictions)
+
 #     end
 # end
 # exdf
 # printtree(ds[10])
 # logsoft_model(ds[10])
 # vscodedisplay(exdf)
-@save "valuable_cape_ex_big.bson" exdf
+@save "layered_and_flat_exdf.bson" exdf
 # @load "../datasets/extra_valuable_cape_ex_big.bson" exdf
 # exdf
-@load "valuable_cape_ex_big.bson" exdf
+#@load "layered_exdf.bson" exdf
 
 # exdf
 
 
-new_df = select(exdf, :name, :pruning_method, :time, :gap, :original_confidence_gap, :nleaves, :explanation_json)
+new_df = select(exdf, :name, :pruning_method, :time, :gap, :original_confidence_gap, :nleaves, :explanation_json, :sampleno)
+new_df.nleaves = new_df.nleaves .+ 1
 transform!(new_df, :time => (x -> round.(x, digits=2)) => :time)
 transform!(new_df, :gap => (x -> first.(x)) => :gap, :original_confidence_gap => (x -> first.(x)) => :original_confidence_gap)
 vscodedisplay(new_df)
 
 
+hard_df = filter(row -> !(row[:sampleno] in indices), new_df)
+easy_df = filter(row -> (row[:sampleno] in indices), new_df)
 
 
 
@@ -142,18 +153,12 @@ new_df[!, :number] = [
         100
     end for name in new_df.name
 ]
+using StatsPlots
 
-# Create a new column for the color
-new_df[!, :color] = ifelse.(startswith.(new_df.name, "lime"), "red", "blue")
-jitter_factor = 0.05# adjust this as needed
-new_df[!, :number_jittered] = new_df.number .* (1 .+ jitter_factor .* (rand(size(new_df, 1)) .- 0.5))
-new_df[!, :nleaves_jittered] = new_df.nleaves .* jitter_factor .* (rand(size(new_df, 1)) .- 0.5)
 
-# new_df = filter(row -> row.nleaves != 0, new_df)
-# Create the scatter plot with more ticks on the x and y axes
-scatter(new_df[new_df.color.=="red", :number_jittered], new_df[new_df.color.=="red", :nleaves], color="red", label="TreeLime", yscale=:log10, markersize=2)
-scatter!(new_df[new_df.color.=="blue", :number_jittered], new_df[new_df.color.=="blue", :nleaves], color="blue", label="Banz", yscale=:log10, markersize=2,
-    xticks=[100, 200],
-    yticks=[100, 200])
-xlabel!("# perturbations")
-ylabel!("# leaves")
+@df new_df violin(string.(:name), :nleaves, linewidth=0, yscale=:log10, size=(1200, 400))
+# @df new_df boxplot!(string.(:name), :nleaves, fillalpha=0.75, linewidth=2, yscale=:log10, size=(1200, 400))
+p = plot(size=(1200, 400), yscale=:log10, yticks=[1, 10, 100, 1000]);
+@df hard_df dotplot!(p, string.(:name), :nleaves, marker=(:red, stroke(0)), label="Hard ones");
+@df easy_df dotplot!(p, string.(:name), :nleaves, marker=(:green, stroke(0)), label="Easy ones")
+
