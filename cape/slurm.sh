@@ -8,4 +8,4 @@ sleep 10
 echo Starting
 
 module load Julia
-stdbuf -o0 -e0 julia  --color=no -O3 cape_explanations.jl  #-i $SLURM_ARRAY_TASK_ID
+stdbuf -o0 -e0 julia  --color=no -O3 cape_explanations.jl  --task $1  #-i $SLURM_ARRAY_TASK_ID
