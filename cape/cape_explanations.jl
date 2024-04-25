@@ -43,7 +43,7 @@ println(predictions)
 
 
 variants = []
-for n in [200, 1000]
+for n in [200, 400, 1000]
     push!(variants, ("lime_$(n)_1_Flat_UP", :Flat_HAdd))
     push!(variants, ("lime_$(n)_1_layered_DOWN", :Flat_HAdd))
     push!(variants, ("lime_$(n)_1_layered_UP", :Flat_HAdd))
@@ -98,7 +98,7 @@ variants
 for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
     e = getexplainer(name;)
     @info "explainer $e on $name with $pruning_method"
-    for j in [1]
+    for j in [task]
         global exdf
         if e isa ExplainMill.TreeLimeExplainer
             exdf = add_cape_treelime_experiment(exdf, e, ds[j][1], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)

@@ -4,15 +4,18 @@ catch
     cd("/home/veresond/ExplainMill.jl/myscripts/cape/results")
 end
 using Pkg
-Pkg.activate("..")
+Pkg.activate("../..")
+using ArgParse, Flux, Mill, JsonGrinder, JSON, BSON, Statistics, IterTools, PrayTools, StatsBase, ExplainMill, Serialization, Setfield, DataFrames, HierarchicalUtils, Random, JLD2, GLMNet, Plots, Zygote
+using StatsPlots
 
-@save "./results/layered_and_flat_exdf_$(task).bson" exdf
-@load "../datasets/extra_valuable_cape_ex_big.bson" exdf
-exdf
-@load "layered_exdf.bson" exdf
+exdfs = []
 
-exdf
+for task in 1:3
+    @load "./layered_and_flat_exdf_$(task).bson" exdf
+    push!(exdfs, exdf)
+end
 
+exdf = vcat(exdfs...)
 
 new_df = select(exdf, :name, :pruning_method, :time, :gap, :original_confidence_gap, :nleaves, :explanation_json, :sampleno)
 new_df.nleaves = new_df.nleaves .+ 1
@@ -35,11 +38,10 @@ new_df[!, :number] = [
         100
     end for name in new_df.name
 ]
-using StatsPlots
 
 
 @df new_df violin(string.(:name), :nleaves, linewidth=0, yscale=:log10, size=(1200, 400))
 # @df new_df boxplot!(string.(:name), :nleaves, fillalpha=0.75, linewidth=2, yscale=:log10, size=(1200, 400))
 p = plot(size=(1200, 400), yscale=:log10, yticks=[1, 10, 100, 1000]);
-@df hard_df dotplot!(p, string.(:name), :nleaves, marker=(:red, stroke(0)), label="Hard ones");
+@df new_df dotplot!(p, string.(:name), :nleaves, marker=(:red, stroke(0)), label="Hard ones")
 @df easy_df dotplot!(p, string.(:name), :nleaves, marker=(:green, stroke(0)), label="Easy ones")
