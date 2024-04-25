@@ -20,7 +20,7 @@ include("../datasets/stats.jl")
 sample_num = 1000
 _s = ArgParseSettings()
 @add_arg_table! _s begin
-    ("--task"; default = "1"; arg_type = Int)
+    ("--task"; default = 1; arg_type = Int)
 end
 settings = parse_args(ARGS, _s; as_symbols=true)
 settings = NamedTuple{Tuple(keys(settings))}(values(settings))
