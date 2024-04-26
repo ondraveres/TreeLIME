@@ -43,8 +43,11 @@ variants = []
 
 for n in [50, 100, 200, 400, 1000]
     push!(variants, ("lime_$(n)_1_Flat_UP_0.0_JSONDIFF", :Flat_HAdd))
+    push!(variants, ("lime_$(n)_1_Flat_UP_0.0_CONST", :Flat_HAdd))
     push!(variants, ("lime_$(n)_1_layered_DOWN_0.0_JSONDIFF", :Flat_HAdd))
-    push!(variants, ("lime_$(n)_1_layered_UP_0.5_CONST", :Flat_HAdd))
+    push!(variants, ("lime_$(n)_1_layered_DOWN_0.0_CONST", :Flat_HAdd))
+    push!(variants, ("lime_$(n)_1_layered_UP_0.0_JSONDIFF", :Flat_HAdd))
+    push!(variants, ("lime_$(n)_1_layered_UP_0.0_CONST", :Flat_HAdd))
     # push!(variants, ("banz_$(n)", :Flat_HAdd))
     # push!(variants, ("banz_$(n)", :LbyLo_Gadd))
     # push!(variants, ("shap_$(n)", :Flat_HAdd))
