@@ -38,20 +38,23 @@ ds = data[1:min(numobs(data), sample_num)]
 model_variant_k = 3
 
 predictions = Flux.onecold((model(ds)))
-println(predictions)
-
-
 
 variants = []
-for n in [200, 400, 1000]
+
+for n in [50, 100, 200, 400, 1000]
     push!(variants, ("lime_$(n)_1_Flat_UP", :Flat_HAdd))
     push!(variants, ("lime_$(n)_1_layered_DOWN", :Flat_HAdd))
     push!(variants, ("lime_$(n)_1_layered_UP", :Flat_HAdd))
+    push!(variants, ("banz_$(n)", :Flat_HAdd))
+    push!(variants, ("banz_$(n)", :LbyLo_Gadd))
+    push!(variants, ("shap_$(n)", :Flat_HAdd))
+    push!(variants, ("shap_$(n)", :LbyLo_Gadd))
 end
 
-push!(variants, ("banz", :Flat_HAdd))
-
-
+push!(variants, ("stochastic", :Flat_HAdd))
+# push!(variants, ("grad", :Flat_HAdd))
+push!(variants, ("const", :Flat_HAdd))
+push!(variants, ("const", :Flat_GAdd))
 
 function getexplainer(name; sch=nothing, extractor=nothing)
     if name == "stochastic"
@@ -60,10 +63,18 @@ function getexplainer(name; sch=nothing, extractor=nothing)
         return ExplainMill.GradExplainer()
     elseif name == "const"
         return ExplainMill.ConstExplainer()
-    elseif name == "gnn"
-        return ExplainMill.GnnExplainer()
-    elseif name == "banz"
-        return ExplainMill.DafExplainer(100)
+    elseif startswith(name, "gnn")
+        split_name = split(name, "_")
+        perturbation_count = parse(Float64, split_name[2])
+        return ExplainMill.GnnExplainer(perturbation_count)
+    elseif startswith(name, "banz")
+        split_name = split(name, "_")
+        perturbation_count = parse(Float64, split_name[2])
+        return ExplainMill.BanzExplainer(perturbation_count)
+    elseif startswith(name, "shap")
+        split_name = split(name, "_")
+        perturbation_count = parse(Float64, split_name[2])
+        return ExplainMill.ShapExplainer(perturbation_count)
     elseif startswith(name, "lime")
         split_name = split(name, "_")
         perturbation_count = parse(Float64, split_name[2])
@@ -107,57 +118,7 @@ for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
         end
     end
 end
-# printtree(ds[1])
-# exdf
-# vscodedisplay(exdf)
 
-# filtered_df = filter(row -> row[:nleaves] == 0, new_df)
-# sampleno_values = filtered_df[!, :sampleno]
-# unique(predictions[sampleno_values])
-# predictions[2]
-# indices = findall(x -> x == 9, predictions)
-
-#     end
-# end
-# exdf
-# printtree(ds[10])
-# logsoft_model(ds[10])
-# vscodedisplay(exdf)
 @save "./results/layered_and_flat_exdf_$(task).bson" exdf
-# @load "../datasets/extra_valuable_cape_ex_big.bson" exdf
-# exdf
-#@load "layered_exdf.bson" exdf
 
-# exdf
-
-
-# new_df = select(exdf, :name, :pruning_method, :time, :gap, :original_confidence_gap, :nleaves, :explanation_json, :sampleno)
-# new_df.nleaves = new_df.nleaves .+ 1
-# transform!(new_df, :time => (x -> round.(x, digits=2)) => :time)
-# transform!(new_df, :gap => (x -> first.(x)) => :gap, :original_confidence_gap => (x -> first.(x)) => :original_confidence_gap)
-# vscodedisplay(new_df)
-
-
-# hard_df = filter(row -> !(row[:sampleno] in indices), new_df)
-# easy_df = filter(row -> (row[:sampleno] in indices), new_df)
-
-
-
-# # Extract the number after "_" in the name
-# new_df[!, :number] = [
-#     try
-#         split_name = split(name, "_")
-#         perturbation_count = parse(Int32, split_name[2])
-#     catch
-#         100
-#     end for name in new_df.name
-# ]
-# using StatsPlots
-
-
-# @df new_df violin(string.(:name), :nleaves, linewidth=0, yscale=:log10, size=(1200, 400))
-# # @df new_df boxplot!(string.(:name), :nleaves, fillalpha=0.75, linewidth=2, yscale=:log10, size=(1200, 400))
-# p = plot(size=(1200, 400), yscale=:log10, yticks=[1, 10, 100, 1000]);
-# @df hard_df dotplot!(p, string.(:name), :nleaves, marker=(:red, stroke(0)), label="Hard ones");
-# @df easy_df dotplot!(p, string.(:name), :nleaves, marker=(:green, stroke(0)), label="Easy ones")
 

@@ -32,6 +32,7 @@ function stats(dd, ms, extractor, soft_model, i, concepts)
         concepts_1_json=JSON.json(concepts[1]),
         concepts_2_json=second_concept,
         flatlength=length(fv),
+        class=i,
     )
     )
 end
