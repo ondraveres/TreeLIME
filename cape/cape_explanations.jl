@@ -42,19 +42,19 @@ predictions = Flux.onecold((model(ds)))
 variants = []
 
 for n in [50, 100, 200, 400, 1000]
-    push!(variants, ("lime_$(n)_1_Flat_UP", :Flat_HAdd))
-    push!(variants, ("lime_$(n)_1_layered_DOWN", :Flat_HAdd))
-    push!(variants, ("lime_$(n)_1_layered_UP", :Flat_HAdd))
-    push!(variants, ("banz_$(n)", :Flat_HAdd))
-    push!(variants, ("banz_$(n)", :LbyLo_Gadd))
-    push!(variants, ("shap_$(n)", :Flat_HAdd))
-    push!(variants, ("shap_$(n)", :LbyLo_Gadd))
+    push!(variants, ("lime_$(n)_1_Flat_UP_0.0_JSONDIFF", :Flat_HAdd))
+    push!(variants, ("lime_$(n)_1_layered_DOWN_0.0_JSONDIFF", :Flat_HAdd))
+    push!(variants, ("lime_$(n)_1_layered_UP_0.5_CONST", :Flat_HAdd))
+    # push!(variants, ("banz_$(n)", :Flat_HAdd))
+    # push!(variants, ("banz_$(n)", :LbyLo_Gadd))
+    # push!(variants, ("shap_$(n)", :Flat_HAdd))
+    # push!(variants, ("shap_$(n)", :LbyLo_Gadd))
 end
 
-push!(variants, ("stochastic", :Flat_HAdd))
-# push!(variants, ("grad", :Flat_HAdd))
-push!(variants, ("const", :Flat_HAdd))
-push!(variants, ("const", :Flat_GAdd))
+# push!(variants, ("stochastic", :Flat_HAdd))
+# # push!(variants, ("grad", :Flat_HAdd))
+# push!(variants, ("const", :Flat_HAdd))
+# push!(variants, ("const", :Flat_GAdd))
 
 function getexplainer(name; sch=nothing, extractor=nothing)
     if name == "stochastic"
@@ -77,11 +77,13 @@ function getexplainer(name; sch=nothing, extractor=nothing)
         return ExplainMill.ShapExplainer(perturbation_count)
     elseif startswith(name, "lime")
         split_name = split(name, "_")
-        perturbation_count = parse(Float64, split_name[2])
+        perturbation_count = parse(Int, split_name[2])
         round_count = parse(Float64, split_name[3])
         lime_type = parse_lime_type(split_name[4])
         direction = parse_direction(split_name[5])
-        return ExplainMill.TreeLimeExplainer(perturbation_count, round_count, lime_type, direction)
+        perturbation_chance = parse(Float64, split_name[6])
+        distance = parse_distance(split_name[6])
+        return ExplainMill.TreeLimeExplainer(perturbation_count, round_count, lime_type, direction, perturbation_chance, distance)
     else
         error("unknown eplainer $name")
     end
@@ -102,8 +104,21 @@ function parse_direction(s::Union{String,SubString{String}})
         return DIRECTION_DICT[:UP]
     end
 end
+
+function parse_distance(s::Union{String,SubString{String}})
+    symbol = Symbol(uppercase(String(s)))
+    if haskey(DISTANCE_DICT, symbol)
+        return DISTANCE_DICT[symbol]
+    else
+        return DISTANCE_DICT[:CONST]
+    end
+end
+
 LIME_TYPE_DICT = Dict(:FLAT => ExplainMill.FLAT, :LAYERED => ExplainMill.LAYERED)
 DIRECTION_DICT = Dict(:UP => ExplainMill.UP, :DOWN => ExplainMill.DOWN)
+DISTANCE_DICT = Dict(:JSONDIFF => ExplainMill.JSONDIFF, :CONST => ExplainMill.CONST)
+
+
 exdf = DataFrame()
 variants
 for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
