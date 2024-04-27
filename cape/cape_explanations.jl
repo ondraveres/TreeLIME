@@ -57,8 +57,10 @@ for n in [50, 100, 200, 400, 1000]
 end
 
 push!(variants, ("stochastic", :Flat_HAdd))
+push!(variants, ("stochastic", :LbyLo_HAdd))
 # # push!(variants, ("grad", :Flat_HAdd))
 push!(variants, ("const", :Flat_HAdd))
+push!(variants, ("const", :LbyLo_HAdd))
 push!(variants, ("const", :Flat_Gadd))
 
 function getexplainer(name; sch=nothing, extractor=nothing)
