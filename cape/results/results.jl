@@ -20,7 +20,7 @@ end
 
 exdf = vcat(exdfs...)
 
-exdf.name .== "lime_50_1_Flat_UP_0.0_CONST"
+
 # vscodedisplay(exdf)
 
 new_df = select(exdf, :name, :pruning_method, :time, :gap, :original_confidence_gap, :nleaves, :explanation_json, :sampleno)
@@ -47,6 +47,21 @@ end
 function extract_value(s)
     m = match(r"\d+", s)
     return m !== nothing ? parse(Int, m.match) : missing
+end
+
+t = Dict(
+    "lime" => "TreeLIME",
+    "banz" => "Banzhaf",
+    "shap" => "Shapley",
+    "Flat" => "Flat",
+    "layered" => "Level by level",
+    "UP" => "Up",
+    "DOWN" => "Down",
+    0.0 => "Random",
+    "CONST" => "Constant",
+    "JSONDIFF" => "JsonDiff")
+function tr(key)
+    return get(t, key, key)
 end
 
 using Measures
@@ -103,12 +118,13 @@ for variable in ["method", "perturbations", "flat_or_layered", "direction", "per
                             possible_dist_local = "X"
                         end
                         for dist in possible_dist_local
-                            title = "method=$(method), type=$(type), direction = $(direction) perturbation_chance = $(perturbation_chance), dist = $(dist)"
+                            filename = "method=$((method)), type=$((type)), direction = $(direction) perturbation_chance = $(perturbation_chance), dist = $(dist)"
+                            title = "$(tr(method)) in $(tr(type)) mode\n with α = $(tr(perturbation_chance)) and δ = $(tr(dist))"
                             println(title)
                             filtered_df = nothing
                             if method == "lime"
                                 filtered_df = filter(row -> occursin(Regex("lime_\\d+_1_$(type)_$(direction)_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
-                                transform!(filtered_df, :name => (x -> "TreeLIME \n n=" .* string.(extract_value.(x)) .* " α=" .* string(perturbation_chance) .* ", dist = " .* string(dist)) => :Formatted_name)
+                                transform!(filtered_df, :name => (x -> "TreeLIME\nn=" .* string.(extract_value.(x)) .* "\nα=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)) => :Formatted_name)
                             else
                                 filtered_df = filter(row -> occursin(Regex("$(method)_\\d+"), row[:name]) && row[:pruning_method] == (type == "Flat" ? :Flat_HAdd : :LbyLo_HAdd), new_df)
                                 transform!(filtered_df, :name => (x -> "$(method) \n n=" .* string.(extract_value.(x))) => :Formatted_name)
@@ -125,9 +141,10 @@ for variable in ["method", "perturbations", "flat_or_layered", "direction", "per
                                 @. str[j] = si * string(filtered_df.Formatted_name[j]) * si
                             end
 
-                            p = plot(size=(1000, 600), yscale=:log10, yticks=[1, 10, 100, 1000], title=title)
-                            @df filtered_df dotplot!(p, str, :nleaves, marker=(:black, stroke(0)), label="Hard ones", xrotation=30, bottom_margin=10mm)
-                            savefig(p, "plots/perturbations/$(title).pdf")
+                            p = plot(size=(1000, 600), yscale=:log10, yticks=[1, 10, 100, 1000], ylabel="Explanation Size", legend=false)
+                            title!(p, title, titlefontsize=20) #titlefontfamily="Helvetica")
+                            @df filtered_df dotplot!(p, str, :nleaves, marker=(:black, stroke(0)), margin=8mm)
+                            savefig(p, "plots/perturbations/$(filename).pdf")
                         end
                     end
                 end
@@ -151,7 +168,7 @@ end
 @df new_df boxplot!(string.(:name), :nleaves, fillalpha=0.75, linewidth=2, yscale=:log10, size=(1200, 400))
 p = plot(size=(1000, 600), yscale=:log10, yticks=[1, 10, 100, 1000]);
 # @df filtered_df dotplot!(p, string.(:name), :nleaves, marker=(:black, stroke(0)), label="Hard ones", xrotation=45)
-@df filtered_df dotplot!(p, str, :nleaves, marker=(:black, stroke(0)), label="Hard ones", xrotation=30, bottom_margin=10mm)
+@df filtered_df dotplot!(p, str, :nleaves, marker=(:black, stroke(0)), label="Hard ones", xrotation=30, bottom_margin=50mm)
 
 @df filtered_df dotplot!(p, string.(:name), :nleaves, marker=(:green, stroke(0)), label="Easy ones")
 
