@@ -78,7 +78,7 @@ possible_methods = ["lime", "banz", "shap"]
 possible_perturbations = [50, 100, 200, 400, 1000]
 possible_type = ["Flat", "layered"]
 possible_direction = ["UP", "DOWN"]
-possible_perturbation_chance = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]
+possible_perturbation_chance = [0.0, 0.1, 0.3, 0.5]#, 0.7, 0.9]
 possible_dist = ["CONST", "JSONDIFF"]
 new_df.pruning_method
 for variable in ["method", "perturbations", "flat_or_layered", "perturbation_chance", "dist", "time"]
@@ -320,19 +320,5 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
         println("No action defined for $variable")
     end
 end
-new_df
-new_df[!, :name_first_10] = first.(new_df.name, 10)
-
-# Use :name_first_10 for grouping in the scatter plot
-scatter(new_df.time, new_df.nleaves, group=new_df.name_first_10, m=(:auto), xlabel="Time", ylabel="Number of Leaves", legend=:bottomright, yscale=:log10)
-p = get_plot()
-scatter!(p, new_df.time, new_df.nleaves, group=new_df.name, xlabel="Time", ylabel="Number of Leaves", legend=:bottomright)
-@df new_df violin(string.(:name), :nleaves, linewidth=0, yscale=:log10, size=(1200, 400));
-@df new_df boxplot!(string.(:name), :nleaves, fillalpha=0.75, linewidth=2, yscale=:log10, size=(1200, 400))
-p = plot(size=(1000, 600), yscale=:log10, yticks=[1, 10, 100, 1000]);
-# @df filtered_df dotplot!(p, string.(:name), :nleaves, marker=(:black, stroke(0)), label="Hard ones", xrotation=45)
-@df filtered_df dotplot!(p, str, :nleaves, marker=(:black, stroke(0)), label="Hard ones", xrotation=30, bottom_margin=50mm)
-
-@df filtered_df dotplot!(p, string.(:name), :nleaves, marker=(:green, stroke(0)), label="Easy ones")
 
 
