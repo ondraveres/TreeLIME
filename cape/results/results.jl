@@ -50,8 +50,27 @@ function extract_value(s)
 end
 
 function get_plot()
-    return plot(size=(1000, 600), yscale=:log10, yticks=[1, 10, 100, 1000], ylabel="Explanation size", legend=false, margin=8mm)
+    return plot(size=(1000, 600), yscale=:log10, yticks=[1, 10, 100, 1000], ylabel="Explanation size", margin=8mm)
 end
+
+function plot_out(title, filename, df, category)
+
+    folder_path = "plots/$(category)/simple"
+    p = get_plot()
+    title!(p, title, titlefontsize=20)
+    @df df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)))
+    mkpath(folder_path)
+    savefig(p, "$(folder_path)/$(filename).pdf")
+
+
+    folder_path = "plots/$(category)/time"
+    p = get_plot()
+    title!(p, title, titlefontsize=20)
+    scatter!(p, df.time, df.nleaves, group=df.Formatted_name, legend=:outertopright, xlabel="Time in seconds", m=(:auto))
+    mkpath(folder_path)
+    savefig(p, "$(folder_path)/$(filename).pdf")
+end
+
 
 t = Dict(
     "lime" => "TreeLIME",
@@ -79,7 +98,6 @@ possible_dist = ["CONST", "JSONDIFF"]
 new_df.pruning_method
 for variable in ["method", "perturbations", "flat_or_layered", "perturbation_chance", "dist", "time"]
     if variable == "method"
-        continue
         for pertubation_count in possible_perturbations
             for type in possible_type
                 for perturbation_chance in possible_perturbation_chance
@@ -120,19 +138,13 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
                         end
                         println("lime_$(pertubation_count)_1_$(type)_UP_$(perturbation_chance)_$(dist)")
                         # print(filtered_df2)
-                        p = get_plot()
-                        title!(p, title, titlefontsize=20)
-                        @df combined_df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)))
-                        folder_path = "plots/methods"
-                        mkpath(folder_path)
-                        savefig(p, "$(folder_path)/$(filename).pdf")
+                        plot_out(title, filename, combined_df, "methods")
                     end
                 end
             end
         end
 
     elseif variable == "perturbations"
-        continue
         println("Action for perturbations")
         for method in possible_methods
             for type in possible_type
@@ -178,13 +190,8 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
                                 si = " "^(Nx - i)
                                 @. str[j] = si * string(filtered_df.Formatted_name[j]) * si
                             end
-
-                            p = get_plot()
-                            title!(p, title, titlefontsize=20) #titlefontfamily="Helvetica")
-                            @df filtered_df dotplot!(p, str, :nleaves, marker=(:black, stroke(0)))
-                            folder_path = "plots/perturbations"
-                            mkpath(folder_path)
-                            savefig(p, "plots/perturbations/$(filename).pdf")
+                            filtered_df.Formatted_name = str
+                            plot_out(title, filename, filtered_df, "perturbations")
                         end
                     end
                 end
@@ -193,7 +200,6 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
 
 
     elseif variable == "flat_or_layered"
-        continue
         println("Action for flat_or_layered")
         for method in possible_methods
             for pertubation_count in possible_perturbations
@@ -242,12 +248,7 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
                             vcat(filtered_df1, filtered_df2, filtered_df3)
                         end
 
-                        p = get_plot()
-                        title!(p, title, titlefontsize=20) #titlefontfamily="Helvetica")
-                        @df combined_df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)), margin=8mm)
-                        folder_path = "plots/Flat_or_layered"
-                        mkpath(folder_path)
-                        savefig(p, "$(folder_path)/$(filename).pdf")
+                        plot_out(title, filename, combined_df, "Flat_or_layered")
                     end
                 end
             end
@@ -255,7 +256,6 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
 
 
     elseif variable == "perturbation_chance"
-        continue
         println("Action for perturbation_chance")
 
         for pertubation_count in possible_perturbations
@@ -291,13 +291,8 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
                             si = " "^(Nx - i)
                             @. str[j] = si * string(filtered_df.Formatted_name[j]) * si
                         end
-
-                        p = get_plot()
-                        title!(p, title, titlefontsize=20) #titlefontfamily="Helvetica")
-                        @df filtered_df dotplot!(p, str, :nleaves, marker=(:black, stroke(0)), margin=8mm)
-                        folder_path = "plots/perturbation_chance"
-                        mkpath(folder_path)
-                        savefig(p, "$(folder_path)/$(filename).pdf")
+                        filtered_df.Formatted_name = str
+                        plot_out(title, filename, filtered_df, "perturbation_chance")
 
                     end
                 end
@@ -331,17 +326,13 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
                             # .* "\nα=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
                         ) => :Formatted_name)
                         combined_df = vcat(filtered_df1, filtered_df2)
-                        p = get_plot()
-                        title!(p, title, titlefontsize=20) #titlefontfamily="Helvetica")
-                        @df combined_df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)), margin=8mm)
-                        folder_path = "plots/dist"
-                        mkpath(folder_path)
-                        savefig(p, "$(folder_path)/$(filename).pdf")
+                        plot_out(title, filename, filtered_df, "dist")
                     end
                 end
             end
         end
     elseif variable == "time"
+        continue
         for pertubation_count in possible_perturbations
             for type in possible_type
                 for perturbation_chance in possible_perturbation_chance
@@ -384,8 +375,8 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
                         # print(filtered_df2)
                         p = get_plot()
                         title!(p, title, titlefontsize=20)
-                        print(combined_df.time, combined_df.nleaves, combined_df.Formatted_name)
-                        scatter!(p, combined_df.time, combined_df.nleaves)#, group=combined_df.Formatted_name)
+                        # print(combined_df.time, combined_df.nleaves, combined_df.Formatted_name)
+                        scatter!(p, combined_df.time, combined_df.nleaves, group=combined_df.Formatted_name, legend=:outertopright, xlabel="Time in seconds")
                         folder_path = "plots/time"
                         mkpath(folder_path)
                         savefig(p, "$(folder_path)/$(filename).pdf")
