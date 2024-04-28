@@ -49,6 +49,10 @@ function extract_value(s)
     return m !== nothing ? parse(Int, m.match) : missing
 end
 
+function get_plot()
+    return plot(size=(1000, 600), yscale=:log10, yticks=[1, 10, 100, 1000], ylabel="Explanation size", legend=false, margin=8mm)
+end
+
 t = Dict(
     "lime" => "TreeLIME",
     "banz" => "Banzhaf",
@@ -64,6 +68,7 @@ function tr(key)
     return get(t, key, key)
 end
 
+
 using Measures
 possible_methods = ["lime", "banz", "shap"]
 possible_perturbations = [50, 100, 200, 400, 1000]
@@ -72,32 +77,62 @@ possible_direction = ["UP", "DOWN"]
 possible_perturbation_chance = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]
 possible_dist = ["CONST", "JSONDIFF"]
 new_df.pruning_method
-for variable in ["method", "perturbations", "flat_or_layered", "direction", "perturbation_chance", "dist"]
+for variable in ["method", "perturbations", "flat_or_layered", "perturbation_chance", "dist", "time"]
     if variable == "method"
         continue
         for pertubation_count in possible_perturbations
             for type in possible_type
                 for perturbation_chance in possible_perturbation_chance
                     for dist in possible_dist
-                        title = "n=$(pertubation_count), type=$(type), perturbation_chance = $(perturbation_chance), dist = $(dist)"
+                        filename = "n=$(pertubation_count), type=$(type), perturbation_chance = $(perturbation_chance), dist = $(dist)"
+                        title = "Comparison of methods in $(tr(type)) mode\n with n=$(pertubation_count)"
                         filtered_df1 = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_$(type)_UP_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
-                        filtered_df6 = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_$(type)_UP_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
+                        transform!(filtered_df1, :name => (
+                            x -> "TreeLIME\ndirection = $(tr("UP")) \nα = $(tr(perturbation_chance)) and δ = $(tr(dist))"
+                        ) => :Formatted_name)
+                        filtered_df6 = nothing
+                        if type == "layered"
+                            filtered_df6 = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_$(type)_DOWN_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
+                            transform!(filtered_df6, :name => (
+                                x -> "TreeLIME\ndirection = $(tr("DOWN")) \nα = $(tr(perturbation_chance)) and δ = $(tr(dist))"
+                            ) => :Formatted_name)
+                        end
                         filtered_df2 = filter(row -> occursin(Regex("shap_$(pertubation_count)"), row[:name]) && row[:pruning_method] == (type == "Flat" ? :Flat_HAdd : :LbyLo_HAdd), new_df)
+                        transform!(filtered_df2, :name => (
+                            x -> "$(tr("shap"))"
+                        ) => :Formatted_name)
                         filtered_df3 = filter(row -> occursin(Regex("banz_$(pertubation_count)"), row[:name]) && row[:pruning_method] == (type == "Flat" ? :Flat_HAdd : :LbyLo_HAdd), new_df)
-                        filtered_df4 = filter(row -> occursin(Regex("const"), row[:name]), new_df)
-                        filtered_df5 = filter(row -> occursin(Regex("stochastic"), row[:name]), new_df)
-                        combined_df = vcat(filtered_df1, filtered_df2, filtered_df3, filtered_df4, filtered_df5, filtered_df6)
+                        transform!(filtered_df3, :name => (
+                            x -> "$(tr("banz"))"
+                        ) => :Formatted_name)
+                        filtered_df4 = filter(row -> occursin(Regex("const"), row[:name]) && row[:pruning_method] == (type == "Flat" ? :Flat_HAdd : :LbyLo_HAdd), new_df)
+                        transform!(filtered_df4, :name => (
+                            x -> "$(tr("const"))"
+                        ) => :Formatted_name)
+                        filtered_df5 = filter(row -> occursin(Regex("stochastic"), row[:name]) && row[:pruning_method] == (type == "Flat" ? :Flat_HAdd : :LbyLo_HAdd), new_df)
+                        transform!(filtered_df5, :name => (
+                            x -> "$(tr("stochastic"))"
+                        ) => :Formatted_name)
+                        combined_df = if filtered_df6 === nothing
+                            vcat(filtered_df1, filtered_df2, filtered_df3, filtered_df4, filtered_df5)
+                        else
+                            vcat(filtered_df1, filtered_df2, filtered_df3, filtered_df4, filtered_df5, filtered_df3)
+                        end
                         println("lime_$(pertubation_count)_1_$(type)_UP_$(perturbation_chance)_$(dist)")
                         # print(filtered_df2)
-                        p = plot(size=(1000, 600), yscale=:log10, yticks=[1, 10, 100, 1000], title=title)
-                        @df combined_df dotplot!(p, :name, :nleaves, marker=(:black, stroke(0)), label="Hard ones", xrotation=30, bottom_margin=10mm)
-                        savefig(p, "plots/methods/$(title).pdf")
+                        p = get_plot()
+                        title!(p, title, titlefontsize=20)
+                        @df combined_df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)))
+                        folder_path = "plots/methods"
+                        mkpath(folder_path)
+                        savefig(p, "$(folder_path)/$(filename).pdf")
                     end
                 end
             end
         end
 
     elseif variable == "perturbations"
+        continue
         println("Action for perturbations")
         for method in possible_methods
             for type in possible_type
@@ -124,7 +159,10 @@ for variable in ["method", "perturbations", "flat_or_layered", "direction", "per
                             filtered_df = nothing
                             if method == "lime"
                                 filtered_df = filter(row -> occursin(Regex("lime_\\d+_1_$(type)_$(direction)_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
-                                transform!(filtered_df, :name => (x -> "TreeLIME\nn=" .* string.(extract_value.(x)) .* "\nα=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)) => :Formatted_name)
+                                transform!(filtered_df, :name => (
+                                    x -> "TreeLIME\nn=" .* string.(extract_value.(x))
+                                    # .* "\nα=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
+                                ) => :Formatted_name)
                             else
                                 filtered_df = filter(row -> occursin(Regex("$(method)_\\d+"), row[:name]) && row[:pruning_method] == (type == "Flat" ? :Flat_HAdd : :LbyLo_HAdd), new_df)
                                 transform!(filtered_df, :name => (x -> "$(method) \n n=" .* string.(extract_value.(x))) => :Formatted_name)
@@ -141,9 +179,11 @@ for variable in ["method", "perturbations", "flat_or_layered", "direction", "per
                                 @. str[j] = si * string(filtered_df.Formatted_name[j]) * si
                             end
 
-                            p = plot(size=(1000, 600), yscale=:log10, yticks=[1, 10, 100, 1000], ylabel="Explanation Size", legend=false)
+                            p = get_plot()
                             title!(p, title, titlefontsize=20) #titlefontfamily="Helvetica")
-                            @df filtered_df dotplot!(p, str, :nleaves, marker=(:black, stroke(0)), margin=8mm)
+                            @df filtered_df dotplot!(p, str, :nleaves, marker=(:black, stroke(0)))
+                            folder_path = "plots/perturbations"
+                            mkpath(folder_path)
                             savefig(p, "plots/perturbations/$(filename).pdf")
                         end
                     end
@@ -151,19 +191,220 @@ for variable in ["method", "perturbations", "flat_or_layered", "direction", "per
             end
         end
 
+
     elseif variable == "flat_or_layered"
+        continue
         println("Action for flat_or_layered")
-    elseif variable == "direction"
-        println("Action for direction")
+        for method in possible_methods
+            for pertubation_count in possible_perturbations
+                perturbation_chance_local = possible_perturbation_chance
+                if method != "lime"
+                    perturbation_chance_local = "X"
+                end
+                for perturbation_chance in perturbation_chance_local
+                    possible_dist_local = possible_dist
+                    if method != "lime"
+                        possible_dist_local = "X"
+                    end
+                    for dist in possible_dist_local
+                        filename = "method=$((method)), n=$(pertubation_count), perturbation_chance = $(perturbation_chance), dist = $(dist)"
+                        title = "$(tr(method))\n with n=$(pertubation_count), α = $(tr(perturbation_chance)) and δ = $(tr(dist))"
+                        println(title)
+                        filtered_df1 = nothing
+                        filtered_df2 = nothing
+                        filtered_df3 = nothing
+                        if method == "lime"
+                            filtered_df1 = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_Flat_UP_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
+                            transform!(filtered_df1, :name => (
+                                x -> "TreeLIME in $(tr("Flat")) mode"
+                                # .* "\nα=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
+                            ) => :Formatted_name)
+                            filtered_df2 = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_layered_UP_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
+                            transform!(filtered_df2, :name => (
+                                x -> "TreeLIME in $(tr("layered"))-$(tr("UP")) mode"
+                                # .* "\nα=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
+                            ) => :Formatted_name)
+                            filtered_df3 = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_layered_DOWN_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
+                            transform!(filtered_df3, :name => (
+                                x -> "TreeLIME in $(tr("layered"))-$(tr("DOWN")) mode"
+                                # .* "\nα=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
+                            ) => :Formatted_name)
+                        else
+                            filtered_df1 = filter(row -> occursin(Regex("$(method)_$(pertubation_count)"), row[:name]) && row[:pruning_method] == :Flat_HAdd, new_df)
+                            transform!(filtered_df1, :name => (x -> "$(method) in $(tr("Flat")) mode") => :Formatted_name)
+
+                            filtered_df2 = filter(row -> occursin(Regex("$(method)_$(pertubation_count)"), row[:name]) && row[:pruning_method] == :LbyLo_HAdd, new_df)
+                            transform!(filtered_df2, :name => (x -> "$(method) in $(tr("layered")) mode") => :Formatted_name)
+                        end
+                        combined_df = if filtered_df3 === nothing
+                            vcat(filtered_df1, filtered_df2)
+                        else
+                            vcat(filtered_df1, filtered_df2, filtered_df3)
+                        end
+
+                        p = get_plot()
+                        title!(p, title, titlefontsize=20) #titlefontfamily="Helvetica")
+                        @df combined_df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)), margin=8mm)
+                        folder_path = "plots/Flat_or_layered"
+                        mkpath(folder_path)
+                        savefig(p, "$(folder_path)/$(filename).pdf")
+                    end
+                end
+            end
+        end
+
+
     elseif variable == "perturbation_chance"
+        continue
         println("Action for perturbation_chance")
+
+        for pertubation_count in possible_perturbations
+            for type in possible_type
+                possible_direction_local = possible_direction
+                if type == "Flat"
+                    possible_direction_local = ["UP"]
+                end
+                for direction in possible_direction_local
+
+
+                    possible_dist_local = possible_dist
+                    for dist in possible_dist_local
+                        filename = "n=$(pertubation_count),type=$((type)), direction = $(direction), dist = $(dist)"
+                        title = "$(tr("lime")) in $(tr(type)) mode\n with n=$(pertubation_count) and δ = $(tr(dist))"
+                        println(title)
+
+                        filtered_df = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_$(type)_$(direction)_([0-9]*\\.[0-9]+)_$(dist)"), row[:name]), new_df)
+
+
+
+                        filtered_df[!, :perturbation_chance] = [parse(Float64, match(Regex("([0-9]*\\.[0-9]+)"), row[:name]).match) for row in eachrow(filtered_df)]
+                        sort!(filtered_df, :perturbation_chance)
+
+                        transform!(filtered_df, [:name, :perturbation_chance] =>
+                            ((name, perturbation_chance) -> "TreeLIME\n" .* "\nα=" .* string.(tr.(perturbation_chance))) => :Formatted_name)
+
+                        xorder = unique(filtered_df.Formatted_name)
+                        Nx = length(xorder)
+                        str = fill("", length(filtered_df.Formatted_name))
+                        for (i, xi) in enumerate(xorder)
+                            j = findall(x -> x == xi, filtered_df.Formatted_name)
+                            si = " "^(Nx - i)
+                            @. str[j] = si * string(filtered_df.Formatted_name[j]) * si
+                        end
+
+                        p = get_plot()
+                        title!(p, title, titlefontsize=20) #titlefontfamily="Helvetica")
+                        @df filtered_df dotplot!(p, str, :nleaves, marker=(:black, stroke(0)), margin=8mm)
+                        folder_path = "plots/perturbation_chance"
+                        mkpath(folder_path)
+                        savefig(p, "$(folder_path)/$(filename).pdf")
+
+                    end
+                end
+            end
+        end
+
+
     elseif variable == "dist"
-        println("Action for dist")
+        continue
+        for pertubation_count in possible_perturbations
+            for perturbation_chance in possible_perturbation_chance
+                for type in possible_type
+                    possible_direction_local = possible_direction
+                    if type == "Flat"
+                        possible_direction_local = ["UP"]
+                    end
+                    for direction in possible_direction_local
+                        filename = "n=$(pertubation_count), perturbation_chance = $(perturbation_chance), type=$((type)), direction = $(direction)"
+                        title = "$(tr("lime")) in $(tr(type))-$(tr(direction)) mode\n with n=$(pertubation_count) and α = $(tr(perturbation_chance))"
+                        println(title)
+
+                        filtered_df1 = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_$(type)_$(direction)_$(perturbation_chance)_CONST"), row[:name]), new_df)
+                        transform!(filtered_df1, :name => (
+                            x -> "TreeLIME with δ = $(tr("CONST"))"
+                            # .* "\nα=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
+                        ) => :Formatted_name)
+
+                        filtered_df2 = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_$(type)_$(direction)_$(perturbation_chance)_JSONDIFF"), row[:name]), new_df)
+                        transform!(filtered_df2, :name => (
+                            x -> "TreeLIME with δ = $(tr("JSONDIFF"))"
+                            # .* "\nα=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
+                        ) => :Formatted_name)
+                        combined_df = vcat(filtered_df1, filtered_df2)
+                        p = get_plot()
+                        title!(p, title, titlefontsize=20) #titlefontfamily="Helvetica")
+                        @df combined_df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)), margin=8mm)
+                        folder_path = "plots/dist"
+                        mkpath(folder_path)
+                        savefig(p, "$(folder_path)/$(filename).pdf")
+                    end
+                end
+            end
+        end
+    elseif variable == "time"
+        for pertubation_count in possible_perturbations
+            for type in possible_type
+                for perturbation_chance in possible_perturbation_chance
+                    for dist in possible_dist
+                        filename = "n=$(pertubation_count), type=$(type), perturbation_chance = $(perturbation_chance), dist = $(dist)"
+                        title = "Comparison of methods in $(tr(type)) mode\n with n=$(pertubation_count)"
+                        filtered_df1 = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_$(type)_UP_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
+                        transform!(filtered_df1, :name => (
+                            x -> "TreeLIME\ndirection = $(tr("UP")) \nα = $(tr(perturbation_chance)) and δ = $(tr(dist))"
+                        ) => :Formatted_name)
+                        filtered_df6 = nothing
+                        if type == "layered"
+                            filtered_df6 = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_$(type)_DOWN_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
+                            transform!(filtered_df6, :name => (
+                                x -> "TreeLIME\ndirection = $(tr("DOWN")) \nα = $(tr(perturbation_chance)) and δ = $(tr(dist))"
+                            ) => :Formatted_name)
+                        end
+                        filtered_df2 = filter(row -> occursin(Regex("shap_$(pertubation_count)"), row[:name]) && row[:pruning_method] == (type == "Flat" ? :Flat_HAdd : :LbyLo_HAdd), new_df)
+                        transform!(filtered_df2, :name => (
+                            x -> "$(tr("shap"))"
+                        ) => :Formatted_name)
+                        filtered_df3 = filter(row -> occursin(Regex("banz_$(pertubation_count)"), row[:name]) && row[:pruning_method] == (type == "Flat" ? :Flat_HAdd : :LbyLo_HAdd), new_df)
+                        transform!(filtered_df3, :name => (
+                            x -> "$(tr("banz"))"
+                        ) => :Formatted_name)
+                        filtered_df4 = filter(row -> occursin(Regex("const"), row[:name]) && row[:pruning_method] == (type == "Flat" ? :Flat_HAdd : :LbyLo_HAdd), new_df)
+                        transform!(filtered_df4, :name => (
+                            x -> "$(tr("const"))"
+                        ) => :Formatted_name)
+                        filtered_df5 = filter(row -> occursin(Regex("stochastic"), row[:name]) && row[:pruning_method] == (type == "Flat" ? :Flat_HAdd : :LbyLo_HAdd), new_df)
+                        transform!(filtered_df5, :name => (
+                            x -> "$(tr("stochastic"))"
+                        ) => :Formatted_name)
+                        combined_df = if filtered_df6 === nothing
+                            vcat(filtered_df1, filtered_df2, filtered_df3, filtered_df4, filtered_df5)
+                        else
+                            vcat(filtered_df1, filtered_df2, filtered_df3, filtered_df4, filtered_df5, filtered_df3)
+                        end
+                        println("lime_$(pertubation_count)_1_$(type)_UP_$(perturbation_chance)_$(dist)")
+                        # print(filtered_df2)
+                        p = get_plot()
+                        title!(p, title, titlefontsize=20)
+                        print(combined_df.time, combined_df.nleaves, combined_df.Formatted_name)
+                        scatter!(p, combined_df.time, combined_df.nleaves)#, group=combined_df.Formatted_name)
+                        folder_path = "plots/time"
+                        mkpath(folder_path)
+                        savefig(p, "$(folder_path)/$(filename).pdf")
+                    end
+                end
+            end
+        end
+
     else
         println("No action defined for $variable")
     end
 end
+new_df
+new_df[!, :name_first_10] = first.(new_df.name, 10)
 
+# Use :name_first_10 for grouping in the scatter plot
+scatter(new_df.time, new_df.nleaves, group=new_df.name_first_10, m=(:auto), xlabel="Time", ylabel="Number of Leaves", legend=:bottomright, yscale=:log10)
+p = get_plot()
+scatter!(p, new_df.time, new_df.nleaves, group=new_df.name, xlabel="Time", ylabel="Number of Leaves", legend=:bottomright)
 @df new_df violin(string.(:name), :nleaves, linewidth=0, yscale=:log10, size=(1200, 400));
 @df new_df boxplot!(string.(:name), :nleaves, fillalpha=0.75, linewidth=2, yscale=:log10, size=(1200, 400))
 p = plot(size=(1000, 600), yscale=:log10, yticks=[1, 10, 100, 1000]);
