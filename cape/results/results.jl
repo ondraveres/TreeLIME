@@ -68,7 +68,10 @@ t = Dict(
 function tr(key)
     return get(t, key, key)
 end
-
+function extract_value(s)
+    m = match(r"\d+", s)
+    return m !== nothing ? parse(Int, m.match) : missing
+end
 
 using Measures
 possible_methods = ["lime", "banz", "shap"]
