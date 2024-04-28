@@ -42,7 +42,7 @@ predictions = Flux.onecold((model(ds)))
 variants = []
 
 for n in [50, 100, 200, 400, 1000]
-    for c in [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]
+    for c in [0.001, 0.01, 0.1, 0.3, 0.5, 0.7, 0.9]
         push!(variants, ("lime_$(n)_1_Flat_UP_$(c)_JSONDIFF", :Flat_HAdd))
         push!(variants, ("lime_$(n)_1_Flat_UP_$(c)_CONST", :Flat_HAdd))
         push!(variants, ("lime_$(n)_1_layered_DOWN_$(c)_JSONDIFF", :Flat_HAdd))
