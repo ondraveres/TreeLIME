@@ -1,5 +1,5 @@
 try
-    cd("/Users/ondrejveres/Diplomka/ExplainMill.jl/myscripts/cape/results")
+    cd("/Users/ondrejveres/Diplomka/ExplainMill.jl/myscripts/cape/results3")
 catch
     cd("/home/veresond/ExplainMill.jl/myscripts/cape/results")
 end
@@ -15,13 +15,14 @@ for task in 1:400
         @load "./layered_and_flat_exdf_$(task).bson" exdf
         push!(exdfs, exdf)
     catch
+        println("task $(task) failed")
     end
 end
 
 exdf = vcat(exdfs...)
 
 
-# vscodedisplay(exdf)
+vscodedisplay(exdf)
 
 new_df = select(exdf, :name, :pruning_method, :time, :gap, :original_confidence_gap, :nleaves, :explanation_json, :sampleno)
 # new_df.nleaves = new_df.nleaves .+ 1
@@ -29,6 +30,11 @@ new_df = filter(row -> row[:nleaves] != 0, new_df)
 transform!(new_df, :time => (x -> round.(x, digits=2)) => :time)
 transform!(new_df, :gap => (x -> first.(x)) => :gap, :original_confidence_gap => (x -> first.(x)) => :original_confidence_gap)
 # vscodedisplay(new_df)
+
+
+new_df = filter(row -> row[:gap] > 0, new_df)
+# num_rows = nrow(filtered_df)
+# nrow(new_df)
 
 
 function get_plot()
@@ -40,7 +46,7 @@ function plot_out(title, filename, df, category)
     folder_path = "plots/$(category)/simple"
     p = get_plot()
     title!(p, title, titlefontsize=20)
-    @df df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)), legend=false)
+    @df df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)))
     mkpath(folder_path)
     savefig(p, "$(folder_path)/$(filename).pdf")
 
