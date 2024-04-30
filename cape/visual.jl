@@ -2,16 +2,12 @@ using Plots
 using Measures
 using JLD2
 
-
-@load "cg_lambda_plot_200_FLAT_UP_1.jld2" lambdas cgs non_zero_lengths nleaves_list
+@load "cg_lambda_plot_50_LAYERED_UP_1.jld2" lambdas cgs non_zero_lengths nleaves_list
 nleaves_list
 cgs
 non_zero_lengths
 lambdas
 
-parts = [[i, i + 1] for i in 1:length(nleaves_list)-1]
-
-parts = filter(part -> (cgs[part[1]] >= 0) && cgs[part[2]] >= 0, parts)
 
 # Get the indices of the parts where both points are positive
 
@@ -25,13 +21,14 @@ scatter_colors = [:darkred, :darkgreen, :darkblue]
 gray_colors = [:lightcoral, :darkseagreen, :lightsteelblue]
 
 # for n in [10, 50, 100, 200, 400, 1000, 5000, 10000]
+n = 50
 plots = []
-for dir in ["UP"]#, "DOWN"]
-    for n in [200, 1000]
-        p = plot(xlabel="lenghts", ylabel="Confidence Gaps", title="FLAT $(n)_$(dir)", legend=false, xlims=(1, 10000), xticks=[1, 10, 100, 1000], xscale=:log10)
+for n in [50]#[200, 1000]
+    for dir in ["UP", "DOWN"]
+        p = plot(xlabel="lenghts", ylabel="Confidence Gaps", title="Layered $(n)_$(dir)", legend=false, xlims=(1, 10000), xticks=[1, 10, 100, 1000], xscale=:log10)
         hline!(p, [0], color=:black, linewidth=1, label="Zero confidance gap")
-        for l in [1]# 2, 3]
-            @load "cg_lambda_plot_$(n)_FLAT_$(dir)_$(l).jld2" lambdas cgs non_zero_lengths nleaves_list
+        for l in [1, 2, 3]
+            @load "cg_lambda_plot_$(n)_LAYERED_$(dir)_$(l).jld2" lambdas cgs non_zero_lengths nleaves_list
             ticks = range(minimum(non_zero_lengths), maximum(non_zero_lengths), step=10)
             non_zero_lengths = non_zero_lengths .+ 1
 
@@ -77,7 +74,7 @@ for dir in ["UP"]#, "DOWN"]
 end
 
 # Combine the plots in a 2 by 3 grid
-p = plot(plots..., layout=grid(10, 3), size=(1500, 3000))
+p = plot(plots..., layout=grid(1, 3), size=(1500, 3000))
 
 # Display the plot
 display(p)

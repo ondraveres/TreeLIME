@@ -41,6 +41,8 @@ predictions = Flux.onecold((model(ds)))
 
 variants = []
 
+push!(variants, ("lime_50_1_layered_UP_0.01_JSONDIFF", :Flat_HAdd))
+
 for n in [50, 100, 200, 400, 1000]
     for c in [0.001, 0.01, 0.1, 0.3, 0.5, 0.7, 0.9]
         push!(variants, ("lime_$(n)_1_Flat_UP_$(c)_JSONDIFF", :Flat_HAdd))
@@ -144,7 +146,6 @@ for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
         end
     end
 end
-
 
 
 @save "./results/layered_and_flat_exdf_$(task).bson" exdf
