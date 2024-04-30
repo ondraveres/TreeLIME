@@ -41,16 +41,19 @@ predictions = Flux.onecold((model(ds)))
 
 variants = []
 
-push!(variants, ("lime_50_1_layered_UP_0.01_JSONDIFF", :Flat_HAdd))
+# push!(variants, ("lime_50_10_layered_UP_0.01_JSONDIFF", :Flat_HAdd))
+possible_rel_tols = [10, 60, 80, 90, 99]
 
-for n in [50, 100, 200, 400, 1000]
-    for c in [0.001, 0.01, 0.1, 0.3, 0.5, 0.7, 0.9]
-        push!(variants, ("lime_$(n)_1_Flat_UP_$(c)_JSONDIFF", :Flat_HAdd))
-        push!(variants, ("lime_$(n)_1_Flat_UP_$(c)_CONST", :Flat_HAdd))
-        push!(variants, ("lime_$(n)_1_layered_DOWN_$(c)_JSONDIFF", :Flat_HAdd))
-        push!(variants, ("lime_$(n)_1_layered_DOWN_$(c)_CONST", :Flat_HAdd))
-        push!(variants, ("lime_$(n)_1_layered_UP_$(c)_JSONDIFF", :Flat_HAdd))
-        push!(variants, ("lime_$(n)_1_layered_UP_$(c)_CONST", :Flat_HAdd))
+for n in [50, 200, 400, 1000]
+    for c in [0.001, 0.01, 0.1]
+        for rel_tol in possible_rel_tols
+            push!(variants, ("lime_$(n)_$(rel_tol)_Flat_UP_$(c)_JSONDIFF", :Flat_HAdd))
+            push!(variants, ("lime_$(n)_$(rel_tol)_Flat_UP_$(c)_CONST", :Flat_HAdd))
+            push!(variants, ("lime_$(n)_$(rel_tol)_layered_DOWN_$(c)_JSONDIFF", :Flat_HAdd))
+            push!(variants, ("lime_$(n)_$(rel_tol)_layered_DOWN_$(c)_CONST", :Flat_HAdd))
+            push!(variants, ("lime_$(n)_$(rel_tol)_layered_UP_$(c)_JSONDIFF", :Flat_HAdd))
+            push!(variants, ("lime_$(n)_$(rel_tol)_layered_UP_$(c)_CONST", :Flat_HAdd))
+        end
     end
     push!(variants, ("banz_$(n)", :Flat_HAdd))
     push!(variants, ("banz_$(n)", :LbyLo_HAdd))
@@ -87,12 +90,12 @@ function getexplainer(name; sch=nothing, extractor=nothing)
     elseif startswith(name, "lime")
         split_name = split(name, "_")
         perturbation_count = parse(Int, split_name[2])
-        round_count = parse(Int, split_name[3])
+        min_cg = parse(Float64, split_name[3]) / 100
         lime_type = parse_lime_type(split_name[4])
         direction = parse_direction(split_name[5])
         perturbation_chance = parse(Float64, split_name[6])
         distance = parse_distance(split_name[6])
-        return ExplainMill.TreeLimeExplainer(perturbation_count, round_count, lime_type, direction, perturbation_chance, distance)
+        return ExplainMill.TreeLimeExplainer(perturbation_count, min_cg, lime_type, direction, perturbation_chance, distance)
     else
         error("unknown eplainer $name")
     end
@@ -137,11 +140,13 @@ for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
         global exdf
         if e isa ExplainMill.TreeLimeExplainer
 
-            exdf = add_cape_treelime_experiment(exdf, e, ds[j][1], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+            exdf = add_cape_treelime_experiment(exdf, e, ds[j][1], logsoft_model, predictions[j], NaN, name, pruning_method, j, statlayer, extractor, model_variant_k)
 
         else
+            for rel_tol in possible_rel_tols
 
-            exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+                exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], rel_tol, name, pruning_method, j, statlayer, extractor, model_variant_k)
+            end
 
         end
     end
@@ -149,6 +154,16 @@ end
 
 
 @save "./results/layered_and_flat_exdf_$(task).bson" exdf
+
+# name = "lime_500_100_layered_UP_0.01_JSONDIFF"
+# e = getexplainer(name;)
+# mk = ExplainMill.treelime(e, ds[1], logsoft_model, extractor)
+# og_class = Flux.onecold((model(ds)))[1]
+# cg1 = ExplainMill.logitconfgap(logsoft_model, ds[1], og_class)[1]
+# cg1 * 0.99
+# cg1 = ExplainMill.logitconfgap(logsoft_model, ds[1][mk], og_class)[1]
+# nleaves(ExplainMill.e2boolean(ds[1], mk, extractor))
+
 
 
 

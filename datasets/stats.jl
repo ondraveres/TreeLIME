@@ -74,29 +74,10 @@ Zygote.@adjoint function (s::StatsLayer)(x)
     x, Δ -> (nothing, Δ)
 end
 
-function addexperiment(exdf, e, dd, logsoft_model, i, rel_tol, name, pruning_method, sampleno, settings, statlayer::StatsLayer, model_variant_k, extractor)
-    reset!(statlayer)
-    t = @elapsed ms = ExplainMill.explain(e, dd, logsoft_model, i, pruning_method=pruning_method, rel_tol=rel_tol)
-    s = merge((
-            name=name,
-            pruning_method=pruning_method,
-            sampleno=sampleno,
-            time=t,
-            dataset=settings.dataset,
-            task=settings.task,
-            incarnation=settings.incarnation,
-            inferences=statlayer.f,
-            gradients=statlayer.b,
-            model_variant_k=model_variant_k
-        ),
-        stats(dd, ms, extractor, logsoft_model, i, concepts)
-    )
-    vcat(exdf, DataFrame([s]))
-end
 
 function add_cape_experiment(exdf, e, dd, logsoft_model, class_to_explain, rel_tol, name, pruning_method, sampleno, statlayer::StatsLayer, extractor, model_variant_k=1)
     reset!(statlayer)
-    t = @elapsed my_ms = ExplainMill.explain(e, dd, logsoft_model, class_to_explain, pruning_method=pruning_method, rel_tol=0)
+    t = @elapsed my_ms = ExplainMill.explain(e, dd, logsoft_model, class_to_explain, pruning_method=pruning_method, rel_tol=rel_tol)
     logical = ExplainMill.e2boolean(dd, my_ms, extractor)
     s = merge((
             name=name,
@@ -109,7 +90,8 @@ function add_cape_experiment(exdf, e, dd, logsoft_model, class_to_explain, rel_t
             inferences=statlayer.f,
             gradients=statlayer.b,
             model_variant_k=model_variant_k,
-            explanation_json=JSON.json(logical)
+            explanation_json=JSON.json(logical),
+            rel_tol=rel_tol
         ),
         stats(dd, my_ms, extractor, logsoft_model, class_to_explain, [Dict()])
     )
@@ -129,30 +111,12 @@ function add_cape_treelime_experiment(exdf, e::ExplainMill.TreeLimeExplainer, dd
             incarnation="single",
             inferences=statlayer.f,
             gradients=statlayer.b,
-            model_variant_k=model_variant_k
+            model_variant_k=model_variant_k,
+            rel_tol=rel_tol
         ),
         stats(dd, ms, extractor, logsoft_model, class_to_explain, [Dict()])
     )
     vcat(exdf, DataFrame([s]))
 end
 
-function add_treelime_experiment(exdf, dd, logsoft_model, i, sampleno, settings, statlayer::StatsLayer, model_variant_k, schema, extractor, perturbation_count, perturbation_chance, perturbations_strategy)
-    reset!(statlayer)
-    t = @elapsed ms = ExplainMill.treelime(dd, logsoft_model, extractor, schema, perturbation_count, perturbation_chance, perturbations_strategy)
-    s = merge((
-            name="treelime_$(perturbations_strategy)",
-            pruning_method="treelime",
-            sampleno=sampleno,
-            time=t,
-            dataset=settings.dataset,
-            task=settings.task,
-            incarnation=settings.incarnation,
-            inferences=statlayer.f,
-            gradients=statlayer.b,
-            model_variant_k=model_variant_k
-        ),
-        stats(dd, ms, extractor, logsoft_model, i, concepts)
-    )
-    vcat(exdf, DataFrame([s]))
-end
 
