@@ -134,19 +134,21 @@ for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
     for j in [task]
         global exdf
         if e isa ExplainMill.TreeLimeExplainer
-            try
-                exdf = add_cape_treelime_experiment(exdf, e, ds[j][1], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-            catch
-            end
+
+            exdf = add_cape_treelime_experiment(exdf, e, ds[j][1], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+
         else
-            try
-                exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
-            catch
-            end
+
+            exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], 0.0005, name, pruning_method, j, statlayer, extractor, model_variant_k)
+
         end
     end
 end
 
+
+
 @save "./results/layered_and_flat_exdf_$(task).bson" exdf
+
+
 
 

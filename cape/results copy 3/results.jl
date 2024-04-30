@@ -10,7 +10,7 @@ using StatsPlots
 
 exdfs = []
 
-for task in 1:400
+for task in 1:100
     try
         @load "./layered_and_flat_exdf_$(task).bson" exdf
         push!(exdfs, exdf)
@@ -258,12 +258,7 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
                     possible_dist_local = possible_dist
                     for dist in possible_dist_local
                         filename = "n=$(pertubation_count),type=$((type)), direction = $(direction), dist = $(dist)"
-                        title = nothing
-                        if type == "Flat"
-                            title = "$(tr("lime")) in $(tr(type)) mode\n with n=$(pertubation_count) and δ = $(tr(dist))"
-                        else
-                            title = "$(tr("lime")) in $(tr(type))-$(tr(direction)) mode\n with n=$(pertubation_count) and δ = $(tr(dist))"
-                        end
+                        title = "$(tr("lime")) in $(tr(type)) mode\n with n=$(pertubation_count) and δ = $(tr(dist))"
                         println(title)
 
                         filtered_df = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_$(type)_$(direction)_([0-9]*\\.[0-9]+)_$(dist)"), row[:name]), new_df)

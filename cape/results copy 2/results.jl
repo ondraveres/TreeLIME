@@ -10,7 +10,7 @@ using StatsPlots
 
 exdfs = []
 
-for task in 1:400
+for task in 1:100
     try
         @load "./layered_and_flat_exdf_$(task).bson" exdf
         push!(exdfs, exdf)
@@ -48,10 +48,7 @@ function plot_out(title, filename, df, category)
     folder_path = "plots/$(category)/time"
     p = get_plot()
     title!(p, title, titlefontsize=20)
-    try
-        scatter!(p, df.time, df.nleaves, group=df.Formatted_name, legend=:outertopright, xlabel="Time in seconds", m=(:auto))
-    catch
-    end
+    scatter!(p, df.time, df.nleaves, group=df.Formatted_name, legend=:outertopright, xlabel="Time in seconds", m=(:auto))
     mkpath(folder_path)
     savefig(p, "$(folder_path)/$(filename).pdf")
 end
@@ -81,7 +78,7 @@ possible_methods = ["lime", "banz", "shap"]
 possible_perturbations = [50, 100, 200, 400, 1000]
 possible_type = ["Flat", "layered"]
 possible_direction = ["UP", "DOWN"]
-possible_perturbation_chance = [0.001, 0.01, 0.1, 0.3, 0.5, 0.7, 0.9]
+possible_perturbation_chance = [0.0, 0.1, 0.3, 0.5]#, 0.7, 0.9]
 possible_dist = ["CONST", "JSONDIFF"]
 new_df.pruning_method
 for variable in ["method", "perturbations", "flat_or_layered", "perturbation_chance", "dist", "time"]
@@ -258,12 +255,7 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
                     possible_dist_local = possible_dist
                     for dist in possible_dist_local
                         filename = "n=$(pertubation_count),type=$((type)), direction = $(direction), dist = $(dist)"
-                        title = nothing
-                        if type == "Flat"
-                            title = "$(tr("lime")) in $(tr(type)) mode\n with n=$(pertubation_count) and δ = $(tr(dist))"
-                        else
-                            title = "$(tr("lime")) in $(tr(type))-$(tr(direction)) mode\n with n=$(pertubation_count) and δ = $(tr(dist))"
-                        end
+                        title = "$(tr("lime")) in $(tr(type)) mode\n with n=$(pertubation_count) and δ = $(tr(dist))"
                         println(title)
 
                         filtered_df = filter(row -> occursin(Regex("lime_$(pertubation_count)_1_$(type)_$(direction)_([0-9]*\\.[0-9]+)_$(dist)"), row[:name]), new_df)
