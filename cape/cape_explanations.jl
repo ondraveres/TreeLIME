@@ -44,14 +44,14 @@ variants = []
 # push!(variants, ("lime_50_10_layered_UP_0.01_JSONDIFF", :Flat_HAdd))
 possible_rel_tols = [10, 60, 80, 90, 99]
 
-for n in [50, 200, 400, 1000]
+for n in [50, 200, 400]#, 1000]
     for c in [0.001, 0.01, 0.1]
         for rel_tol in possible_rel_tols
-            push!(variants, ("lime_$(n)_$(rel_tol)_Flat_UP_$(c)_JSONDIFF", :Flat_HAdd))
+            # push!(variants, ("lime_$(n)_$(rel_tol)_Flat_UP_$(c)_JSONDIFF", :Flat_HAdd))
             push!(variants, ("lime_$(n)_$(rel_tol)_Flat_UP_$(c)_CONST", :Flat_HAdd))
-            push!(variants, ("lime_$(n)_$(rel_tol)_layered_DOWN_$(c)_JSONDIFF", :Flat_HAdd))
+            #push!(variants, ("lime_$(n)_$(rel_tol)_layered_DOWN_$(c)_JSONDIFF", :Flat_HAdd))
             push!(variants, ("lime_$(n)_$(rel_tol)_layered_DOWN_$(c)_CONST", :Flat_HAdd))
-            push!(variants, ("lime_$(n)_$(rel_tol)_layered_UP_$(c)_JSONDIFF", :Flat_HAdd))
+            #push!(variants, ("lime_$(n)_$(rel_tol)_layered_UP_$(c)_JSONDIFF", :Flat_HAdd))
             push!(variants, ("lime_$(n)_$(rel_tol)_layered_UP_$(c)_CONST", :Flat_HAdd))
         end
     end
@@ -90,12 +90,12 @@ function getexplainer(name; sch=nothing, extractor=nothing)
     elseif startswith(name, "lime")
         split_name = split(name, "_")
         perturbation_count = parse(Int, split_name[2])
-        min_cg = parse(Float64, split_name[3]) / 100
+        rel_tol = parse(Float64, split_name[3]) / 100
         lime_type = parse_lime_type(split_name[4])
         direction = parse_direction(split_name[5])
         perturbation_chance = parse(Float64, split_name[6])
         distance = parse_distance(split_name[6])
-        return ExplainMill.TreeLimeExplainer(perturbation_count, min_cg, lime_type, direction, perturbation_chance, distance)
+        return ExplainMill.TreeLimeExplainer(perturbation_count, rel_tol, lime_type, direction, perturbation_chance, distance)
     else
         error("unknown eplainer $name")
     end
@@ -145,7 +145,7 @@ for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
         else
             for rel_tol in possible_rel_tols
 
-                exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], rel_tol, name, pruning_method, j, statlayer, extractor, model_variant_k)
+                exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], Float64(rel_tol) / 100, name, pruning_method, j, statlayer, extractor, model_variant_k)
             end
 
         end
