@@ -1,0 +1,31 @@
+{
+    "static": {
+        "pe": {
+            "dirents": [],
+            "guest_signers": {},
+            "digital_signers": [],
+            "exports": [],
+            "imports": [],
+            "overlay": {},
+            "resources": [],
+            "sections": []
+        }
+    },
+    "behavior": {
+        "summary": {
+            "delete_files": [],
+            "delete_keys": [],
+            "keys": [],
+            "mutexes": [],
+            "executed_commands": [],
+            "started_services": [],
+            "write_keys": [],
+            "files": [],
+            "created_services": [],
+            "read_keys": [],
+            "write_files": [],
+            "resolved_apis": [],
+            "read_files": []
+        }
+    }
+}
