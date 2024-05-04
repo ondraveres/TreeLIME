@@ -33,6 +33,7 @@ model = @set model.m = Chain(model.m, statlayer)
 # soft_model = @set model.m = Chain(model.m, softmax)
 logsoft_model = @set model.m = Chain(model.m, logsoftmax)
 Random.seed!(1)
+data = shuffle(data)
 
 ds = data[1:min(numobs(data), sample_num)]
 model_variant_k = 3
@@ -42,16 +43,16 @@ predictions = Flux.onecold((model(ds)))
 variants = []
 
 # push!(variants, ("lime_50_10_layered_UP_0.01_JSONDIFF", :Flat_HAdd))
-possible_rel_tols = [10, 60, 80, 90, 99]
+possible_rel_tols = [50, 75, 90, 99]
 
-for n in [50, 200, 400]#, 1000]
-    for c in [0.001, 0.01, 0.1]
+for n in [50, 200, 400, 1000]
+    for c in [0.01, 0.1, 0.2]
         for rel_tol in possible_rel_tols
-            # push!(variants, ("lime_$(n)_$(rel_tol)_Flat_UP_$(c)_JSONDIFF", :Flat_HAdd))
+            push!(variants, ("lime_$(n)_$(rel_tol)_Flat_UP_$(c)_JSONDIFF", :Flat_HAdd))
             push!(variants, ("lime_$(n)_$(rel_tol)_Flat_UP_$(c)_CONST", :Flat_HAdd))
-            #push!(variants, ("lime_$(n)_$(rel_tol)_layered_DOWN_$(c)_JSONDIFF", :Flat_HAdd))
+            push!(variants, ("lime_$(n)_$(rel_tol)_layered_DOWN_$(c)_JSONDIFF", :Flat_HAdd))
             push!(variants, ("lime_$(n)_$(rel_tol)_layered_DOWN_$(c)_CONST", :Flat_HAdd))
-            #push!(variants, ("lime_$(n)_$(rel_tol)_layered_UP_$(c)_JSONDIFF", :Flat_HAdd))
+            push!(variants, ("lime_$(n)_$(rel_tol)_layered_UP_$(c)_JSONDIFF", :Flat_HAdd))
             push!(variants, ("lime_$(n)_$(rel_tol)_layered_UP_$(c)_CONST", :Flat_HAdd))
         end
     end
