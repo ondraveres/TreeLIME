@@ -17,7 +17,7 @@ include("../datasets/loader.jl")
 include("../datasets/stats.jl")
 
 
-sample_num = 1000
+sample_num = 3000
 _s = ArgParseSettings()
 @add_arg_table! _s begin
     ("--task"; default = 1; arg_type = Int)
@@ -156,15 +156,72 @@ end
 
 @save "./results/layered_and_flat_exdf_$(task).bson" exdf
 
-# name = "lime_500_100_layered_UP_0.01_JSONDIFF"
-# e = getexplainer(name;)
-# mk = ExplainMill.treelime(e, ds[1], logsoft_model, extractor)
-# og_class = Flux.onecold((model(ds)))[1]
-# cg1 = ExplainMill.logitconfgap(logsoft_model, ds[1], og_class)[1]
-# cg1 * 0.99
-# cg1 = ExplainMill.logitconfgap(logsoft_model, ds[1][mk], og_class)[1]
-# nleaves(ExplainMill.e2boolean(ds[1], mk, extractor))
+predictions
+unique_predictions = sort(unique(predictions))
+indices = [findall(x -> x == prediction, predictions) for prediction in unique_predictions]
 
+first_items = [vec[1:5] for vec in indices]
+classes_ratio = []
+for class in first_items
+    ratios = []
+    for item in class
+        no_mk = ExplainMill.create_mask_structure(ds[item], d -> SimpleMask(fill(true, d)))
+        og_class = Flux.onecold((model(ds[item])))[1]
+        mk = ExplainMill.create_mask_structure(ds[item], d -> SimpleMask(fill(false, d)))
+        ExplainMill.logitconfgap(logsoft_model, ds[item][mk], og_class)[1]
+        mk
+        my_cgs = []
+        myrecursion(mk, my_cgs, item)
+
+
+
+        histogram(my_cgs, bins=50, xlabel="Confidence Gap", ylabel="Frequency", label="Histogram")
+        total_leaves = nleaves(ExplainMill.e2boolean(ds[item], no_mk, extractor))
+        positive_cgs = count(x -> x > 0, my_cgs)
+        ratio = positive_cgs / total_leaves
+        push!(ratios, positive_cgs)
+    end
+    push!(classes_ratio, mean(ratios))
+end
+println(predictions[1:400])
+classes_ratio
+println(classes_ratio)
+bar(ratios, yscale=:log10, yticks=[1, 10, 100, 1000])
+
+function myrecursion(mask, my_cgs, item, i=1)
+    if mask isa ExplainMill.ProductMask
+        print(mask)
+        ch = children(mask)
+        for (name, value) in pairs(ch)
+            print(name)
+            myrecursion(value, my_cgs, item)
+        end
+    elseif mask isa ExplainMill.BagMask
+        print(mask)
+        for i in 1:length(mask.mask.x)
+            mask.mask.x[i] = true
+            myrecursion(children(mask)[1], my_cgs, item, i)
+            mask.mask.x[i] = false
+        end
+    else
+        print(mask)
+        mask.mask.x[i] = true
+        n = nleaves(ExplainMill.e2boolean(ds[item], mk, extractor))
+        print("N=", n)
+        if n == 1
+            cg = ExplainMill.logitconfgap(logsoft_model, ds[item][mk], og_class)[1]
+            println(JSON.json(ExplainMill.e2boolean(ds[1], mk, extractor)))
+            push!(my_cgs, cg)
+        end
+        println(i)
+        mask.mask.x[i] = false
+    end
+end
+myrecursion(mk)
+histogram(cgs)
+total_cgs = length(cgs)
+positive_cgs = count(x -> x > 0, cgs)
+ratio = positive_cgs / total_cgs
 
 
 
