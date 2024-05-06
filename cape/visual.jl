@@ -55,9 +55,9 @@ function get_lambda_plot(n, type, dir)
     return p
 end
 
-function plot_out!(p, x, cgs, l, findminorfindmax)
+function plot_out!(p, x, cgs, l, findminorfindmax, min_cg)
 
-    above_zero_indices = cgs .>= 0
+    above_zero_indices = cgs .>= min_cg
     below_zero_indices = .!above_zero_indices
     if (findminorfindmax == findmin)
         x = map(i -> i == 0 ? i + 1 : i, x)
@@ -68,7 +68,7 @@ function plot_out!(p, x, cgs, l, findminorfindmax)
 
     parts = [[i, i + 1] for i in 1:length(x)-1]
 
-    parts = filter(part -> (cgs[part[1]] >= 0) && cgs[part[2]] >= 0, parts)
+    parts = filter(part -> (cgs[part[1]] >= min_cg) && cgs[part[2]] >= min_cg, parts)
 
     for part in parts
         plot!(p, x[part], cgs[part], label=nothing, color=line_colors[l], linewidth=2)
@@ -82,11 +82,11 @@ function plot_out!(p, x, cgs, l, findminorfindmax)
     # plot!(p, x, cgs, label="Layer $(l)", color=line_colors[l], linewidth=1)#, xticks=ticks)
     # Add small dots where the points are
     scatter!(p, x, cgs, markersize=3, markercolor=scatter_colors[l], markerstrokecolor=scatter_colors[l], label=nothing)
-    scatter!(p, x[cgs.<0], cgs[cgs.<0], color=gray_colors[l], markersize=3, markerstrokecolor=gray_colors[l], label=nothing)
+    scatter!(p, x[cgs.<min_cg], cgs[cgs.<min_cg], color=gray_colors[l], markersize=3, markerstrokecolor=gray_colors[l], label=nothing)
 
     # Highlight the line which represents zero confidence gap
 
-    positive_cgs = cgs .> 0
+    positive_cgs = cgs .> min_cg
     if any(positive_cgs)
         best_index = findminorfindmax(x[positive_cgs])[2]
 
@@ -101,53 +101,61 @@ function plot_out!(p, x, cgs, l, findminorfindmax)
     end
     hlinelabel = nothing
     if l == 1
-        hlinelabel = "CG threshold"
+        hlinelabel = "Min CG"
     end
-    hline!(p, [0], color=:black, linewidth=1, label=hlinelabel)
+    hline!(p, [min_cg], color=:gray, linewidth=2, label=hlinelabel, linestyle=:dash)
+    hline!(p, [0], color=:gray, linewidth=1, label=hlinelabel)
     return p
 end
 
-# for n in [10, 50, 100, 200, 400, 1000, 5000, 10000]
-for type in ["FLAT", "LAYERED"]
-    for n in [50, 200, 400, 1000]
-        plots = []
-        possible_dir = ["UP", "DOWN"]
-        if type == "FLAT"
-            possible_dir = ["UP"]
-        end
-        for dir in possible_dir
-            possible_layers = [1, 2]#, 3]
+
+for rel_tol in [50, 75, 90, 99]
+    for type in ["FLAT", "LAYERED"]
+        for n in [50, 200, 400, 1000]
+            plots = []
+            possible_dir = ["UP", "DOWN"]
             if type == "FLAT"
-                possible_layers = [1]
+                possible_dir = ["UP"]
             end
-            p = get_plot(n, type, dir)
-            p_lambda = get_lambda_plot(n, type, dir)
-            for l in possible_layers
-                @load "visual_snapshot/cg_lambda_plot_$(n)_$(type)_$(dir)_$(l)_4.jld2" lambdas cgs non_zero_lengths nleaves_list
-                # perm = sortperm(nleaves_list)
-                println("cg_lambda_plot_$(n)_$(type)_$(dir)_$(l)_4")
+            try
+                for dir in possible_dir
+                    possible_layers = [1, 2]#, 3]
+                    if type == "FLAT"
+                        possible_layers = [1]
+                    end
 
-                # nleaves_list = nleaves_list[perm]
-                # cgs_sorted = cgs[perm]
+                    p = get_plot(n, type, dir)
+                    p_lambda = get_lambda_plot(n, type, dir)
+                    for l in possible_layers
 
-                plot_out!(p, nleaves_list, cgs, l, findmin)
+                        @load "visual_snapshot/cg_lambda_plot_$(n)_$(type)_$(dir)_$(l)_$(rel_tol/100)_4.jld2" lambdas cgs non_zero_lengths nleaves_list min_cg
+                        # perm = sortperm(nleaves_list)
+                        println("cg_lambda_plot_$(n)_$(type)_$(dir)_$(l)_4")
 
-                plot_out!(p_lambda, lambdas, cgs, l, findmax)
+                        # nleaves_list = nleaves_list[perm]
+                        # cgs_sorted = cgs[perm]
+
+                        plot_out!(p, nleaves_list, cgs, l, findmin, min_cg)
+
+                        plot_out!(p_lambda, lambdas, cgs, l, findmax, min_cg)
 
 
 
 
+                    end
+                    push!(plots, p)
+                    push!(plots, p_lambda)
+                end
+                width_px = round(Int, 20 * 150 / 2.54)
+                height_px = round(Int, 15 * 150 / 2.54)
+                p = plot(plots..., size=(width_px, height_px))
+
+                # Display the plot
+                display(p)
+                savefig(p, "optimization_visual/$(type)_optimization_$(n)_$(rel_tol).pdf")
+            catch
             end
-            push!(plots, p)
-            push!(plots, p_lambda)
         end
-        width_px = round(Int, 20 * 150 / 2.54)
-        height_px = round(Int, 15 * 150 / 2.54)
-        p = plot(plots..., size=(width_px, height_px))
-
-        # Display the plot
-        display(p)
-        savefig(p, "optimization_visual/flat_optimization_$(n).pdf")
     end
 end
 
