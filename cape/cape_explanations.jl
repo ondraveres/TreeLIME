@@ -133,16 +133,13 @@ DISTANCE_DICT = Dict(:JSONDIFF => ExplainMill.JSONDIFF, :CONST => ExplainMill.CO
 
 
 exdf = DataFrame()
-variants
 for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
     e = getexplainer(name;)
     @info "explainer $e on $name with $pruning_method"
     for j in [task]
         global exdf
         if e isa ExplainMill.TreeLimeExplainer
-
             exdf = add_cape_treelime_experiment(exdf, e, ds[j][1], logsoft_model, predictions[j], NaN, name, pruning_method, j, statlayer, extractor, model_variant_k)
-
         else
             for rel_tol in possible_rel_tols
 
