@@ -151,7 +151,6 @@ print(new_df.name)
 print(new_df)
 for variable in ["method", "perturbations", "flat_or_layered", "perturbation_chance", "dist", "time"]
     if variable == "method"
-        continue
         for pertubation_count in possible_perturbations
             for type in possible_type
                 # for perturbation_chance in possible_perturbation_chance
@@ -211,7 +210,6 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
         end
 
     elseif variable == "perturbations"
-        continue
         println("Action for perturbations")
         for method in possible_methods_with_perturbations
             for type in possible_type
@@ -272,7 +270,6 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
 
 
     elseif variable == "flat_or_layered"
-        continue
         println("Action for flat_or_layered")
         for method in possible_methods
             for pertubation_count in possible_perturbations
@@ -337,7 +334,6 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
 
     elseif variable == "perturbation_chance"
         println("Action for perturbation_chance")
-        continue
         for pertubation_count in possible_perturbations
             for type in possible_type
                 possible_direction_local = possible_direction
