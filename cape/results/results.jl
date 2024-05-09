@@ -41,7 +41,7 @@ DISTANCE_DICT = Dict(:JSONDIFF => ExplainMill.JSONDIFF, :CONST => ExplainMill.CO
 
 exdfs = []
 
-for task in 1:400
+for task in 1:1400
     try
         @load "./layered_and_flat_exdf_$(task).bson" exdf
         push!(exdfs, exdf)
@@ -65,7 +65,7 @@ transform!(new_df, :gap => (x -> first.(x)) => :gap, :original_confidence_gap =>
 
 
 function get_plot()
-    width_cm = 15
+    width_cm = 30
     height_cm = 8
     dpi = 150
     width_px = round(Int, width_cm * dpi / 2.54)
@@ -149,8 +149,9 @@ possible_dist = ["CONST", "JSONDIFF"]
 possible_rel_tols = [50, 75, 90, 99]
 print(new_df.name)
 print(new_df)
-for variable in ["method", "perturbations", "flat_or_layered", "perturbation_chance", "dist", "time"]
+for variable in ["method", "perturbations", "flat_or_layered", "perturbation_chance", "dist", "time", "rel_tol"]
     if variable == "method"
+        continue
         for pertubation_count in possible_perturbations
             for type in possible_type
                 # for perturbation_chance in possible_perturbation_chance
@@ -209,7 +210,9 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
             end
         end
 
+
     elseif variable == "perturbations"
+        continue
         println("Action for perturbations")
         for method in possible_methods_with_perturbations
             for type in possible_type
@@ -270,6 +273,7 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
 
 
     elseif variable == "flat_or_layered"
+        continue
         println("Action for flat_or_layered")
         for method in possible_methods
             for pertubation_count in possible_perturbations
@@ -331,8 +335,70 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
             end
         end
 
+    elseif variable == "rel_tol"
+        println("Action for rel_tol")
+        for method in possible_methods
+            for pertubation_count in possible_perturbations
+                perturbation_chance_local = possible_perturbation_chance
+                if method != "lime"
+                    perturbation_chance_local = "X"
+                end
+                for perturbation_chance in perturbation_chance_local
+                    possible_dist_local = possible_dist
+                    if method != "lime"
+                        possible_dist_local = "X"
+                    end
+                    for dist in possible_dist_local
+                        filename = "method=$((method)), n=$(pertubation_count), perturbation_chance = $(perturbation_chance), dist = $(dist)"
+                        title = nothing
+                        if method == "lime"
+                            title = "$(tr(method)) with n=$(pertubation_count)\n α = $(tr(perturbation_chance)), δ = $(tr(dist))"
+                        else
+                            title = "$(tr(method))\n with n=$(pertubation_count)"
+                        end
+                        println(title)
+                        filtered_df1 = nothing
+                        filtered_df2 = nothing
+                        filtered_df3 = nothing
+                        if method == "lime"
+                            filtered_df1 = filter(row -> occursin(Regex("lime_$(pertubation_count)_\\d+_Flat_UP_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
+                            transform!(filtered_df1, :name => (
+                                x -> "TreeLIME\nin $(tr("Flat")) mode\n with rel_tol=" .* string.(map(x -> x[2], name_to_props.(filtered_df1.name)))
+                                # .* "\nα=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
+                            ) => :Formatted_name)
+                            filtered_df2 = filter(row -> occursin(Regex("lime_$(pertubation_count)_\\d+_layered_UP_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
+                            transform!(filtered_df2, :name => (
+                                x -> "TreeLIME\nin $(tr("layered"))-$(tr("UP")) mode\n with rel_tol=" .* string.(map(x -> x[2], name_to_props.(filtered_df2.name)))
+                                # .* "\nα=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
+                            ) => :Formatted_name)
+                            filtered_df3 = filter(row -> occursin(Regex("lime_$(pertubation_count)_\\d+_layered_DOWN_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
+                            transform!(filtered_df3, :name => (
+                                x -> "TreeLIME\nin $(tr("layered"))-$(tr("DOWN")) mode\n with rel_tol=" .* string.(map(x -> x[2], name_to_props.(filtered_df3.name)))
+                                # .* "\nα=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
+                            ) => :Formatted_name)
+                        else
+                            filtered_df1 = filter(row -> occursin(Regex("$(method)_$(pertubation_count)"), row[:name]) && row[:pruning_method] == :Flat_HAdd, new_df)
+                            transform!(filtered_df1, :name => (x -> "$(tr(method)) in $(tr("Flat")) mode\n with rel_tol=" .* string.(filtered_df1[!, :rel_tol])) => :Formatted_name)
+
+                            filtered_df2 = filter(row -> occursin(Regex("$(method)_$(pertubation_count)"), row[:name]) && row[:pruning_method] == :LbyLo_HAdd, new_df)
+                            transform!(filtered_df2, :name => (x -> "$(tr(method)) in $(tr("layered")) mode\n with rel_tol=" .* string.(filtered_df2[!, :rel_tol])) => :Formatted_name)
+                        end
+                        combined_df = if filtered_df3 === nothing
+                            vcat(filtered_df1, filtered_df2)
+                        else
+                            vcat(filtered_df1, filtered_df2, filtered_df3)
+                        end
+
+                        plot_out(title, filename, combined_df, "rel_tol")
+                    end
+                end
+            end
+        end
+
+
 
     elseif variable == "perturbation_chance"
+        continue
         println("Action for perturbation_chance")
         for pertubation_count in possible_perturbations
             for type in possible_type
@@ -386,6 +452,7 @@ for variable in ["method", "perturbations", "flat_or_layered", "perturbation_cha
 
 
     elseif variable == "dist"
+        continue
         for pertubation_count in possible_perturbations
             for perturbation_chance in possible_perturbation_chance
                 for type in possible_type
