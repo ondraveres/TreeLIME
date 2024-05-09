@@ -133,25 +133,25 @@ DISTANCE_DICT = Dict(:JSONDIFF => ExplainMill.JSONDIFF, :CONST => ExplainMill.CO
 
 
 exdf = DataFrame()
-# for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
-#     e = getexplainer(name;)
-#     @info "explainer $e on $name with $pruning_method"
-#     for j in [task]
-#         global exdf
-#         if e isa ExplainMill.TreeLimeExplainer
-#             exdf = add_cape_treelime_experiment(exdf, e, ds[j][1], logsoft_model, predictions[j], NaN, name, pruning_method, j, statlayer, extractor, model_variant_k)
-#         else
-#             for rel_tol in possible_rel_tols
+for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
+    e = getexplainer(name;)
+    @info "explainer $e on $name with $pruning_method"
+    for j in [task]
+        global exdf
+        if e isa ExplainMill.TreeLimeExplainer
+            exdf = add_cape_treelime_experiment(exdf, e, ds[j][1], logsoft_model, predictions[j], NaN, name, pruning_method, j, statlayer, extractor, model_variant_k)
+        else
+            for rel_tol in possible_rel_tols
 
-#                 exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], Float64(rel_tol) / 100, name, pruning_method, j, statlayer, extractor, model_variant_k)
-#             end
+                exdf = add_cape_experiment(exdf, e, ds[j], logsoft_model, predictions[j], Float64(rel_tol) / 100, name, pruning_method, j, statlayer, extractor, model_variant_k)
+            end
 
-#         end
-#     end
-# end
+        end
+    end
+end
 
 
-@save "./results/data/layered_and_flat_exdf_$(task+1000).bson" exdf
+@save "./results/data/layered_and_flat_exdf_$(task+2000).bson" exdf
 
 predictions
 unique_predictions = sort(unique(predictions))
