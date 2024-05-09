@@ -37,7 +37,8 @@ end
 
 function get_plot(n, type, dir, rt)
     p = get_plot_settings(7.5, 8, "Explanation size", "Confidence gap",)
-    plot!(p, #xlims=(1, 10000), xticks=[1, 10, 100, 1000],
+    plot!(p, #xlims=(1, 10000), 
+        xticks=[1, 10, 100, 1000],
         xscale=:log10, legend=:bottomleft)
     if type == "FLAT"
         # plot!(p, title="Flat TreeLIME optimization\ncompared to explanation size\nwith n=$(n) and rel_tol=$(rt)%")
@@ -103,7 +104,9 @@ function plot_out!(p, x, cgs, l, findminorfindmax, min_cg, type, dir)
 
     positive_cgs = cgs .> min_cg
     if any(positive_cgs)
-        best_index = findminorfindmax(x[positive_cgs])[2]
+        min_value, min_index = findminorfindmax(x[positive_cgs])
+        min_indices = findall(x -> x == min_value, x[positive_cgs])
+        best_index = maximum(min_indices)
 
         max_cg = cgs[positive_cgs][best_index]
         result_label = nothing
@@ -120,9 +123,15 @@ function plot_out!(p, x, cgs, l, findminorfindmax, min_cg, type, dir)
     end
     hlinelabel = nothing
     zerolabel = nothing
-    if l == 1
-        hlinelabel = "Min CG"
-        zerolabel = "0 CG"
+    oglabel = nothing
+    if (type == "FLAT") || (type == "LAYERED" && dir == "UP" && l == 3) || (type == "LAYERED" && dir == "DOWN" && l == 1)
+        hlinelabel = "CG threshold"
+        zerolabel = "Zero CG"
+        oglabel = "Sample CG"
+        if (findminorfindmax == findmin)
+            scatter!(p, [x[1]], [cgs[1]], color=:black, markersize=4, markerstrokecolor=:gray, label="Original sample")
+        end
+        hline!(p, [cgs[1]], color=:gray, linewidth=2, label=oglabel, linestyle=:dot)
     end
     hline!(p, [min_cg], color=:gray, linewidth=2, label=hlinelabel, linestyle=:dash)
     hline!(p, [0], color=:gray, linewidth=1, label=zerolabel)
@@ -170,9 +179,9 @@ for class in collect(1:10)
                         height_px = round(Int, 8 * 150 / 2.54)
                         title = nothing
                         if type == "FLAT"
-                            title = "Flat TreeLIME optimization compared to λ and Explnation size \nwith n=$(n) and relative tolerance=$(rel_tol)%"
+                            title = "Flat TreeLIME optimization\nwith n=$(n) and relative tolerance=$(rel_tol)%"
                         else
-                            title = "Layered TreeLIME optimization compared to λ and explnation size\nwith n=$(n), dir=$(dir) and relative tolerance=$(rel_tol)%"
+                            title = "Layered TreeLIME optimization\nwith n=$(n), direction=$(dir == "UP" ? "Up" : "Down") and relative tolerance=$(rel_tol)%"
                         end
                         title = plot(title=title, grid=false, showaxis=false, bottom_margin=-50Plots.px, titlefontsize=15)
                         p_comp = plot(title, plots..., size=(width_px, height_px), layout=@layout([A{0.01h}; [B C]]), top_margin=5mm)# layout=(length(plots), 1))
