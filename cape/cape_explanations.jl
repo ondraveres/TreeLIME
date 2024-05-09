@@ -180,6 +180,7 @@ for class in first_items
     for item in class
         no_mk = ExplainMill.create_mask_structure(ds[item], d -> SimpleMask(fill(true, d)))
         og_class = Flux.onecold((model(ds[item])))[1]
+        println(og_class)
         mk = ExplainMill.create_mask_structure(ds[item], d -> SimpleMask(fill(false, d)))
         og_cg = ExplainMill.logitconfgap(logsoft_model, ds[item][no_mk], og_class)[1]
         mk
