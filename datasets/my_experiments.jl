@@ -24,7 +24,7 @@ _s = ArgParseSettings()
 @add_arg_table! _s begin
     ("--dataset"; default = "mutagenesis"; arg_type = String)
     ("--task"; default = "one_of_1_1trees"; arg_type = String)
-    ("--incarnation"; default = 8; arg_type = Int)
+    ("--incarnation"; default = 1; arg_type = Int)
     ("-k"; default = 5; arg_type = Int)
 end
 settings = parse_args(ARGS, _s; as_symbols=true)
@@ -79,12 +79,9 @@ fv.itemmap
 new_mask_bool_vector = [fv[i] for i in 1:length(fv.itemmap)]
 
 
-
-
-
 global extractor
 global sch
-model_variant_k = 10
+model_variant_k = 3
 model_name = "my-2-march-model-variant-$(model_variant_k).bson"
 # if true || !isfile(resultsdir(model_name))
 !isdir(resultsdir()) && mkpath(resultsdir())
@@ -132,7 +129,7 @@ JSON.parse("{}")
 
 labels
 d = BSON.load(resultsdir(model_name))
-(model, extractor, sch) = d[:model], d[:extractor], d[:sch]
+(mymodel, extractor, sch) = d[:model], d[:extractor], d[:sch]
 statlayer = StatsLayer()
 model = @set model.m = Chain(model.m, statlayer)
 soft_model = @set model.m = Chain(model.m, softmax)
@@ -172,11 +169,105 @@ printtree(mask)
 #     global exdf
 #     exdf = add_treelime_experiment(exdf, ds[j], logsoft_model, 2, j, settings, statlayer, model_variant_k, extractor)
 # end
+ExplainMill.FLAT
+ExplainMill.UP
+ExplainMill.CONST
+
+e = ExplainMill.TreeLimeExplainer(
+    10000,#n::Int
+    0.5,#rel_tol::Float64
+    ExplainMill.FLAT,
+    ExplainMill.DOWN,#type::LimeType
+    20,
+    ExplainMill.CONST
+)
+
+e = ExplainMill.TreeLimeExplainer(
+    10000,#n::Int
+    0.5,#rel_tol::Float64
+    ExplainMill.LAYERED,
+    ExplainMill.DOWN,#type::LimeType
+    20,
+    ExplainMill.CONST
+)
+t = @elapsed ms = ExplainMill.treelime(e::ExplainMill.TreeLimeExplainer, dd::AbstractMillNode, mymodel::AbstractMillModel, extractor)
+@load "Xmatrix-LAYERED-3.jld2" Xmatrix
+X_flat = Xmatrix
+X_layered_1 = Xmatrix
+X_layered_2 = Xmatrix
+X_layered_3 = Xmatrix
+using Statistics
+using Plots
+using StatsBase
+using Distances
+jaccard_matrix = pairwise(Jaccard(), X_flat, dims=2)
+mean(X_flat)
+mean(X_layered)
+
+histogram(Xmatrix, legend=false)
+col_means_f = mean(X_flat, dims=1)
+col_means_l = mean(X_layered, dims=1)
+plot(vec(col_means_f))
+plot(vec(col_means_f), label="Vector 1")
+plot!(vec(col_means_l), label="Vector 2")
+histogram(col_means, legend=false)
+maximum(col_means)
+corMatrix_f = cor(X_flat)
+corMatrix_l1 = cor(X_layered_1)
+corMatrix_l2 = cor(X_layered_2)
+corMatrix_l3 = cor(X_layered_3)
 
 
+function get_plot_settings(width_cm, height_cm, xlabel, ylabel)
+    dpi = 150
+    width_px = round(Int, width_cm * dpi / 2.54)
+    height_px = round(Int, height_cm * dpi / 2.54)
+    p = plot(size=(width_px, height_px), xlabel=xlabel, ylabel=ylabel, margin=3mm, #left right top bottom
+        titlefontsize=15,
+        guidefontsize=8,
+        tickfontsize=6,
+        legendfontsize=8,
+        # xlims=(0, 300)
+    )
 
+    return p
+end
 
+function get_plot()
+    p = get_plot_settings(7.5, 8, "Predictor indexes", "Predictor indexes",)
+end
+p_f = get_plot()
+p_l1 = get_plot()
+p_l2 = get_plot()
+p_l3 = get_plot()
 
+using Measures
+# backend(:plotly)
+using Plots
+# plotly()
+# gr()
+# pyplot()
+ENV["GKS_PDF_PREVIEW_FIX"] = "false"
+delete!(ENV, "GKS_PDF_PREVIEW_FIX")
+ticks = [0, 50, 100, 150, 200, 250, 300]
+heatmap!(p_f, corMatrix_f, clim=(0, 1), title="Flat TreeLIME predicators\ncorrelation matrix",
+    aspect_ratio=:equal, top_margin=-7mm, xticks=ticks, ytick=ticks, xlims=(-20, 300), ylims=(-20, 300))
+heatmap!(p_l1, corMatrix_l1, clim=(0, 1), title="Layered TreeLIME\ncorrelation matrix - Layer 1",
+    aspect_ratio=1, top_margin=-7mm, xticks=[0, 10, 20, 30], yticks=[0, 10, 20, 30], xlims=(-3, 33), ylims=(-3, 33))
+heatmap!(p_l2, corMatrix_l2, clim=(0, 1), title="Layered TreeLIME\ncorrelation matrix - Layer 2",
+    aspect_ratio=1, top_margin=-7mm, xticks=ticks, ytick=ticks, xlims=(-10, 110), ylims=(-10, 110))
+heatmap!(p_l3, corMatrix_l3, clim=(0, 1), title="Layered TreeLIME\ncorrelation matrix - Layer 3",
+    aspect_ratio=1, top_margin=-7mm, xticks=ticks, ytick=ticks, xlims=(-15, 165), ylims=(-15, 165))
+width_px = round(Int, 15 * 150 / 2.54)
+height_px = round(Int, 14 * 150 / 2.54)
+# title = plot(title="title", grid=false, showaxis=false, bottom_margin=-50Plots.px, titlefontsize=15)
+p_comp = plot(p_f, p_l1, p_l2, p_l3, size=(width_px, height_px), layout=@layout([B C; D E]), top_margin=-10mm, left_margin=3mm, right_margin=3mm, bottom_margin=-10mm)# layout=(length(plots), 1))
+
+display(p_comp)
+savefig(p_comp, "heatmap.pdf")
+heatmap([0, 1])
+
+plot(trace, layout)
 dd = extractor(samples[10099], store_input=true)
 mask = ExplainMill.create_mask_structure(dd, d -> SimpleMask(fill(true, d)))
 mask = ExplainMill.create_mask_structure(dd, d -> SimpleMask(fill(true, d)))
@@ -187,7 +278,7 @@ printtree(mk)
 
 model(dd)
 
-fv = ExplainMill.FlatView(mk)
+# fv = ExplainMill.FlatView(mk)
 
 ranking = [15, 30, 5, 12, 17, 2, 10, 23, 19, 18, 26, 24, 11, 25, 7, 21, 31, 4, 6, 13, 14, 1, 20, 9, 27, 16, 29, 8, 3, 22, 28]
 length(fv.itemmap)
