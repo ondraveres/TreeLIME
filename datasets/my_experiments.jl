@@ -250,13 +250,13 @@ using Plots
 ENV["GKS_PDF_PREVIEW_FIX"] = "false"
 delete!(ENV, "GKS_PDF_PREVIEW_FIX")
 ticks = [0, 50, 100, 150, 200, 250, 300]
-heatmap!(p_f, corMatrix_f, clim=(0, 1), title="Flat TreeLIME predicators\ncorrelation matrix",
+heatmap!(p_f, corMatrix_f, clim=(0, 1), title="Flat TreeLIME predictors\ncorrelation matrix",
     aspect_ratio=:equal, top_margin=-7mm, xticks=ticks, ytick=ticks, xlims=(-20, 300), ylims=(-20, 300))
-heatmap!(p_l1, corMatrix_l1, clim=(0, 1), title="Layered TreeLIME\ncorrelation matrix - Layer 1",
+heatmap!(p_l1, corMatrix_l1, clim=(0, 1), title="Layered TreeLIME predictors\ncorrelation matrix - Layer 1",
     aspect_ratio=1, top_margin=-7mm, xticks=[0, 10, 20, 30], yticks=[0, 10, 20, 30], xlims=(-3, 33), ylims=(-3, 33))
-heatmap!(p_l2, corMatrix_l2, clim=(0, 1), title="Layered TreeLIME\ncorrelation matrix - Layer 2",
+heatmap!(p_l2, corMatrix_l2, clim=(0, 1), title="Layered TreeLIME predictors\ncorrelation matrix - Layer 2",
     aspect_ratio=1, top_margin=-7mm, xticks=ticks, ytick=ticks, xlims=(-10, 110), ylims=(-10, 110))
-heatmap!(p_l3, corMatrix_l3, clim=(0, 1), title="Layered TreeLIME\ncorrelation matrix - Layer 3",
+heatmap!(p_l3, corMatrix_l3, clim=(0, 1), title="Layered TreeLIME predictors\ncorrelation matrix - Layer 3",
     aspect_ratio=1, top_margin=-7mm, xticks=ticks, ytick=ticks, xlims=(-15, 165), ylims=(-15, 165))
 width_px = round(Int, 15 * 150 / 2.54)
 height_px = round(Int, 14 * 150 / 2.54)

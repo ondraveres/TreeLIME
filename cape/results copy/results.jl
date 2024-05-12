@@ -41,7 +41,7 @@ DISTANCE_DICT = Dict(:JSONDIFF => ExplainMill.JSONDIFF, :CONST => ExplainMill.CO
 
 exdfs = []
 
-for task in 1:10000
+for task in 1:1400
     try
         @load "./data/layered_and_flat_exdf_$(task).bson" exdf
         push!(exdfs, exdf)
@@ -71,7 +71,7 @@ function get_plot()
     dpi = 150
     width_px = round(Int, width_cm * dpi / 2.54)
     height_px = round(Int, height_cm * dpi / 2.54)
-    return plot(size=(width_px, height_px), yscale=:log10, yticks=[1, 10, 100, 1000], ylabel="Explanation size", margin=10mm,
+    return plot(size=(width_px, height_px), yscale=:log10, yticks=[1, 10, 100, 1000], ylabel="Explanation size", margin=5mm,
         titlefontsize=17,
         guidefontsize=12,
         tickfontsize=8,
@@ -87,7 +87,12 @@ function plot_out(title, filename, df, category)
     @df df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)), legend=false, markersize=2)
     @df df boxplot!(p, :Formatted_name, :nleaves, fillalpha=0.75, linewidth=3, linecolor=:black, marker=(:black, stroke(3)), legend=false, outliers=false)
     mkpath(folder_path)
-    savefig(p, "$(folder_path)/$(filename).pdf")
+    path = "$(folder_path)/$(filename).pdf"
+    path = replace(path, " " => "")
+    path = replace(path, "," => "-")
+    path = replace(path, "." => "")
+    path = replace(path, "=" => "is")
+    savefig(p, path)
 
 
     folder_path = "plots/$(category)/time"
@@ -98,7 +103,12 @@ function plot_out(title, filename, df, category)
     catch
     end
     mkpath(folder_path)
-    savefig(p, "$(folder_path)/$(filename).pdf")
+    path = "$(folder_path)/$(filename).pdf"
+    path = replace(path, " " => "")
+    path = replace(path, "," => "-")
+    path = replace(path, "." => "")
+    path = replace(path, "=" => "is")
+    savefig(p, path)
 end
 
 function name_to_props(name)
@@ -145,7 +155,7 @@ possible_methods_with_perturbations = ["lime", "banz", "shap"]
 possible_perturbations = [50, 200, 400, 1000]
 possible_type = ["Flat", "layered"]
 possible_direction = ["UP", "DOWN"]
-possible_perturbation_chance = [0.01, 0.1, 0.2, 5.0]
+possible_perturbation_chance = [0.01, 0.1, 0.2]
 possible_dist = ["CONST", "JSONDIFF"]
 possible_rel_tols = [50, 75, 90, 99]
 # print(new_df.name)
@@ -153,20 +163,20 @@ possible_rel_tols = [50, 75, 90, 99]
 i = 0
 for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", "perturbation_chance", "dist", "time", "rel_tol"]
     if variable == "best_treelime"
-        continue
         for pertubation_count in possible_perturbations
             for type in possible_type
                 # for perturbation_chance in possible_perturbation_chance
-                for dist in possible_dist
+                for dist in ["CONST"]
                     for rel_tol in possible_rel_tols
-                        filename = "n=$(pertubation_count), type=$(type), rel_tol = $(rel_tol/100), dist = $(dist)"
-                        title = "Comparison of methods in $(tr(type)) mode\n with n=$(pertubation_count), relative tolerance = $(rel_tol/100) and  δ = $(tr(dist))"
+                        filename = "n=$(pertubation_count)-type=$(type)-rel_tol=$(rel_tol/100)-dist=$(dist)"
+                        title = "Comparison of methods in $(tr(type)) mode\n with n=$(pertubation_count) and relative tolerance = $(rel_tol)%"
                         filtered_df1 = filter(row -> occursin(Regex("lime_$(pertubation_count)_$(rel_tol)_$(type)_UP_0.2_$(dist)"), row[:name]), new_df)
                         perturbation_chances = map(x -> x[5], name_to_props.(filtered_df1.name))
                         if type == "layered"
                             transform!(filtered_df1, :name => (
                                 x -> "TreeLIME\ndir = $(tr("UP")) \nσ = " .* string.(perturbation_chances) .* "\nδ = $(tr(dist))"
                             ) => :Formatted_name)
+                            empty!(filtered_df1)
                         else
                             transform!(filtered_df1, :name => (
                                 x -> "TreeLIME\nσ = " .* string.(perturbation_chances) .* "\nδ = $(tr(dist))"
@@ -209,7 +219,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                         # end
                         i += 1
                         if i == 3
-                            return
+                            # return
                         end
                     end
                 end
@@ -217,6 +227,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
         end
 
     elseif variable == "method"
+        continue
         for pertubation_count in possible_perturbations
             for type in possible_type
                 # for perturbation_chance in possible_perturbation_chance
@@ -277,6 +288,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "perturbations"
+        continue
         println("Action for perturbations")
         for method in possible_methods_with_perturbations
             for type in possible_type
@@ -337,6 +349,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "flat_or_layered"
+        continue
         println("Action for flat_or_layered")
         for method in possible_methods
             for pertubation_count in possible_perturbations
@@ -399,6 +412,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
         end
 
     elseif variable == "rel_tol"
+        continue
         println("Action for rel_tol")
         for method in possible_methods
             for pertubation_count in possible_perturbations
@@ -412,7 +426,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                         possible_dist_local = "X"
                     end
                     for dist in possible_dist_local
-                        filename = "method=$((method)), n=$(pertubation_count), perturbation_chance = $(perturbation_chance), dist = $(dist)"
+                        filename = "method=$((method))-n=$(pertubation_count)-perturbation_chance=$(perturbation_chance)-dist = $(dist)"
                         title = nothing
                         if method == "lime"
                             title = "$(tr(method)) with n=$(pertubation_count)\n σ = $(tr(perturbation_chance)), δ = $(tr(dist))"
@@ -461,6 +475,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "perturbation_chance"
+        continue
         println("Action for perturbation_chance")
         for pertubation_count in possible_perturbations
             for type in possible_type
@@ -474,7 +489,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                     possible_dist_local = possible_dist
                     for dist in possible_dist_local
                         for rel_tol in possible_rel_tols
-                            filename = "n=$(pertubation_count),type=$((type)), direction = $(direction), dist = $(dist), rel_tol = $(rel_tol)"
+                            filename = "n=$(pertubation_count)-type=$((type)), direction = $(direction), dist = $(dist), rel_tol = $(rel_tol)"
                             title = nothing
                             if type == "Flat"
                                 title = "$(tr("lime")) in $(tr(type)) mode\nwith n=$(pertubation_count), δ = $(tr(dist)) and relative tolerance = $(rel_tol/100)"
@@ -514,6 +529,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "dist"
+        continue
         for pertubation_count in possible_perturbations
             for perturbation_chance in possible_perturbation_chance
                 for type in possible_type
@@ -523,7 +539,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                     end
                     for direction in possible_direction_local
                         for rel_tol in possible_rel_tols
-                            filename = "n=$(pertubation_count), perturbation_chance = $(perturbation_chance), type=$((type)), direction = $(direction), rel_tol = $(rel_tol)"
+                            filename = "n=$(pertubation_count)-perturbation_chance=$(perturbation_chance)-type=$((type))-direction=$(direction)-rel_tol=$(rel_tol)"
                             title = "$(tr("lime")) in $(tr(type))-$(tr(direction)) mode\n with n=$(pertubation_count), σ = $(tr(perturbation_chance)) and relative tolerance = $(rel_tol/100)"
                             println(title)
 

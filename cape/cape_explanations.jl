@@ -43,10 +43,14 @@ predictions = Flux.onecold((model(ds)))
 variants = []
 
 # push!(variants, ("lime_50_10_layered_UP_0.01_JSONDIFF", :Flat_HAdd))
-possible_rel_tols = [50, 75, 90, 99]
+possible_rel_tols = [50, 75, 99]
 
-for n in [50, 200, 400, 1000]
-    for c in [0.01, 0.1, 0.2, 5.0]
+
+for n in [200]
+    for c in [0.0,
+        0.01, 0.1, 0.2,
+        1.01, 1.1, 1.2,
+        2.1, 2.5, 2.9]
         for rel_tol in possible_rel_tols
             push!(variants, ("lime_$(n)_$(rel_tol)_Flat_UP_$(c)_JSONDIFF", :Flat_HAdd))
             push!(variants, ("lime_$(n)_$(rel_tol)_Flat_UP_$(c)_CONST", :Flat_HAdd))
@@ -95,7 +99,7 @@ function getexplainer(name; sch=nothing, extractor=nothing)
         lime_type = parse_lime_type(split_name[4])
         direction = parse_direction(split_name[5])
         perturbation_chance = parse(Float64, split_name[6])
-        distance = parse_distance(split_name[6])
+        distance = parse_distance(split_name[7])
         return ExplainMill.TreeLimeExplainer(perturbation_count, rel_tol, lime_type, direction, perturbation_chance, distance)
     else
         error("unknown eplainer $name")
