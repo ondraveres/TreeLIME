@@ -2,7 +2,7 @@
 #SBATCH --job-name=exp2
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1 --ntasks-per-node=1 --cpus-per-task=1
-#SBATCH --mem=20G
+#SBATCH --mem=40G
 echo Hello
 sleep 10
 echo Starting

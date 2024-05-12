@@ -41,7 +41,7 @@ DISTANCE_DICT = Dict(:JSONDIFF => ExplainMill.JSONDIFF, :CONST => ExplainMill.CO
 
 exdfs = []
 
-for task in 1:1400
+for task in 1:10000
     try
         @load "./data/layered_and_flat_exdf_$(task).bson" exdf
         push!(exdfs, exdf)
@@ -145,7 +145,7 @@ possible_methods_with_perturbations = ["lime", "banz", "shap"]
 possible_perturbations = [50, 200, 400, 1000]
 possible_type = ["Flat", "layered"]
 possible_direction = ["UP", "DOWN"]
-possible_perturbation_chance = [0.01, 0.1, 0.2]
+possible_perturbation_chance = [0.01, 0.1, 0.2, 5.0]
 possible_dist = ["CONST", "JSONDIFF"]
 possible_rel_tols = [50, 75, 90, 99]
 # print(new_df.name)
@@ -153,6 +153,7 @@ possible_rel_tols = [50, 75, 90, 99]
 i = 0
 for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", "perturbation_chance", "dist", "time", "rel_tol"]
     if variable == "best_treelime"
+        continue
         for pertubation_count in possible_perturbations
             for type in possible_type
                 # for perturbation_chance in possible_perturbation_chance
@@ -216,7 +217,6 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
         end
 
     elseif variable == "method"
-        continue
         for pertubation_count in possible_perturbations
             for type in possible_type
                 # for perturbation_chance in possible_perturbation_chance
@@ -277,7 +277,6 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "perturbations"
-        continue
         println("Action for perturbations")
         for method in possible_methods_with_perturbations
             for type in possible_type
@@ -338,7 +337,6 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "flat_or_layered"
-        continue
         println("Action for flat_or_layered")
         for method in possible_methods
             for pertubation_count in possible_perturbations
@@ -401,7 +399,6 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
         end
 
     elseif variable == "rel_tol"
-        continue
         println("Action for rel_tol")
         for method in possible_methods
             for pertubation_count in possible_perturbations
@@ -464,7 +461,6 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "perturbation_chance"
-        continue
         println("Action for perturbation_chance")
         for pertubation_count in possible_perturbations
             for type in possible_type
@@ -518,7 +514,6 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "dist"
-        continue
         for pertubation_count in possible_perturbations
             for perturbation_chance in possible_perturbation_chance
                 for type in possible_type
