@@ -160,6 +160,7 @@ end
 # unique_predictions = sort(unique(predictions))
 # indices = [findall(x -> x == prediction, predictions) for prediction in unique_predictions]
 
+
 # first_items = [vec[1:5] for vec in indices]
 # classes_ratio = []
 # classes_lengths = []
@@ -183,11 +184,13 @@ end
 #     for item in class
 #         no_mk = ExplainMill.create_mask_structure(ds[item], d -> SimpleMask(fill(true, d)))
 #         og_class = Flux.onecold((model(ds[item])))[1]
+#         println(og_class)
 #         mk = ExplainMill.create_mask_structure(ds[item], d -> SimpleMask(fill(false, d)))
 #         og_cg = ExplainMill.logitconfgap(logsoft_model, ds[item][no_mk], og_class)[1]
 #         mk
 #         my_cgs = []
 #         myrecursion(mk, my_cgs, item, mk, og_class, og_cg)
+
 
 #         histogram(my_cgs, bins=50, xlabel="Confidence Gap", ylabel="Frequency", label="Histogram")
 #         total_leaves = nleaves(ExplainMill.e2boolean(ds[item], no_mk, extractor))
