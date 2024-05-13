@@ -87,12 +87,12 @@ function plot_out(title, filename, df, category)
     @df df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)), legend=false, markersize=2)
     @df df boxplot!(p, :Formatted_name, :nleaves, fillalpha=0.75, linewidth=3, linecolor=:black, marker=(:black, stroke(3)), legend=false, outliers=false)
     mkpath(folder_path)
-    path = "$(folder_path)/$(filename).pdf"
+    path = "$(folder_path)/$(filename)"
     path = replace(path, " " => "")
     path = replace(path, "," => "-")
     path = replace(path, "." => "")
     path = replace(path, "=" => "is")
-    savefig(p, path)
+    savefig(p, path * ".pdf")
 
 
     folder_path = "plots/$(category)/time"
@@ -103,12 +103,12 @@ function plot_out(title, filename, df, category)
     catch
     end
     mkpath(folder_path)
-    path = "$(folder_path)/$(filename).pdf"
+    path = "$(folder_path)/$(filename)"
     path = replace(path, " " => "")
     path = replace(path, "," => "-")
     path = replace(path, "." => "")
     path = replace(path, "=" => "is")
-    savefig(p, path)
+    savefig(p, path * ".pdf")
 end
 
 function name_to_props(name)
