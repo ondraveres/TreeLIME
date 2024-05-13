@@ -87,12 +87,7 @@ function plot_out(title, filename, df, category)
     @df df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)), legend=false, markersize=2)
     @df df boxplot!(p, :Formatted_name, :nleaves, fillalpha=0.75, linewidth=3, linecolor=:black, marker=(:black, stroke(3)), legend=false, outliers=false)
     mkpath(folder_path)
-    path = "$(folder_path)/$(filename).pdf"
-    path = replace(path, " " => "")
-    path = replace(path, "," => "-")
-    path = replace(path, "." => "")
-    path = replace(path, "=" => "is")
-    savefig(p, path)
+    savefig(p, "$(folder_path)/$(filename).pdf")
 
 
     folder_path = "plots/$(category)/time"
@@ -103,12 +98,7 @@ function plot_out(title, filename, df, category)
     catch
     end
     mkpath(folder_path)
-    path = "$(folder_path)/$(filename).pdf"
-    path = replace(path, " " => "")
-    path = replace(path, "," => "-")
-    path = replace(path, "." => "")
-    path = replace(path, "=" => "is")
-    savefig(p, path)
+    savefig(p, "$(folder_path)/$(filename).pdf")
 end
 
 function name_to_props(name)
@@ -152,20 +142,18 @@ end
 using Measures
 possible_methods = ["lime", "banz", "shap", "const", "stochastic"]
 possible_methods_with_perturbations = ["lime", "banz", "shap"]
-possible_perturbations = [200, 1000]
+possible_perturbations = [50, 200, 400, 1000]
 possible_type = ["Flat", "layered"]
 possible_direction = ["UP", "DOWN"]
-possible_perturbation_chance = [0.0,
-    0.01, 0.1, 0.2,
-    1.01, 1.1, 1.2,
-    2.1, 2.5, 2.9]
+possible_perturbation_chance = [0.01, 0.1, 0.2, 5.0]
 possible_dist = ["CONST", "JSONDIFF"]
-possible_rel_tols = [50, 99]
+possible_rel_tols = [50, 75, 90, 99]
 # print(new_df.name)
 # print(new_df)
 i = 0
 for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", "perturbation_chance", "dist", "time", "rel_tol"]
     if variable == "best_treelime"
+        continue
         for pertubation_count in possible_perturbations
             for type in possible_type
                 # for perturbation_chance in possible_perturbation_chance
@@ -173,7 +161,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                     for rel_tol in possible_rel_tols
                         filename = "n=$(pertubation_count), type=$(type), rel_tol = $(rel_tol/100), dist = $(dist)"
                         title = "Comparison of methods in $(tr(type)) mode\n with n=$(pertubation_count), relative tolerance = $(rel_tol/100) and  δ = $(tr(dist))"
-                        filtered_df1 = filter(row -> occursin(Regex("lime_$(pertubation_count)_$(rel_tol)_$(type)_UP_1.2_$(dist)"), row[:name]), new_df)
+                        filtered_df1 = filter(row -> occursin(Regex("lime_$(pertubation_count)_$(rel_tol)_$(type)_UP_0.2_$(dist)"), row[:name]), new_df)
                         perturbation_chances = map(x -> x[5], name_to_props.(filtered_df1.name))
                         if type == "layered"
                             transform!(filtered_df1, :name => (
@@ -187,7 +175,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
                         filtered_df6 = nothing
                         if type == "layered"
-                            filtered_df6 = filter(row -> occursin(Regex("lime_$(pertubation_count)_$(rel_tol)_$(type)_DOWN_1.2_$(dist)"), row[:name]), new_df)
+                            filtered_df6 = filter(row -> occursin(Regex("lime_$(pertubation_count)_$(rel_tol)_$(type)_DOWN_0.2_$(dist)"), row[:name]), new_df)
                             perturbation_chances = map(x -> x[5], name_to_props.(filtered_df6.name))
                             transform!(filtered_df6, :name => (
                                 x -> "TreeLIME\ndir = $(tr("DOWN")) \nσ = " .* string.(perturbation_chances) .* "\nδ = $(tr(dist))"
@@ -218,13 +206,17 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                         println("lime_$(pertubation_count)_$(rel_tol)_$(type)_UP_$(dist)")
                         # print(filtered_df2)
                         plot_out(title, filename, combined_df, "best_treelime")
+                        # end
+                        i += 1
+                        if i == 3
+                            return
+                        end
                     end
                 end
             end
         end
 
     elseif variable == "method"
-        continue
         for pertubation_count in possible_perturbations
             for type in possible_type
                 # for perturbation_chance in possible_perturbation_chance
@@ -285,7 +277,6 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "perturbations"
-        continue
         println("Action for perturbations")
         for method in possible_methods_with_perturbations
             for type in possible_type
@@ -346,7 +337,6 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "flat_or_layered"
-        continue
         println("Action for flat_or_layered")
         for method in possible_methods
             for pertubation_count in possible_perturbations
@@ -409,7 +399,6 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
         end
 
     elseif variable == "rel_tol"
-        continue
         println("Action for rel_tol")
         for method in possible_methods
             for pertubation_count in possible_perturbations
@@ -472,7 +461,6 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "perturbation_chance"
-        continue
         println("Action for perturbation_chance")
         for pertubation_count in possible_perturbations
             for type in possible_type
@@ -526,7 +514,6 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "dist"
-        continue
         for pertubation_count in possible_perturbations
             for perturbation_chance in possible_perturbation_chance
                 for type in possible_type
