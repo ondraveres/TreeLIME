@@ -41,7 +41,7 @@ DISTANCE_DICT = Dict(:JSONDIFF => ExplainMill.JSONDIFF, :CONST => ExplainMill.CO
 
 exdfs = []
 
-for task in 1:10000
+for task in 1:6200
     try
         @load "./data/layered_and_flat_exdf_$(task).bson" exdf
         push!(exdfs, exdf)
@@ -75,17 +75,17 @@ function get_plot()
         titlefontsize=17,
         guidefontsize=12,
         tickfontsize=8,
-        legendfontsize=10
+        legendfontsize=8
     )
 end
 using Printf
-function plot_out(title, filename, df, category)
+function plot_out(title, filename, df, category; xrotation=0)
 
     folder_path = "plots/$(category)/simple"
     p = get_plot()
     title!(p, title)
-    @df df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)), legend=false, markersize=2)
-    @df df boxplot!(p, :Formatted_name, :nleaves, fillalpha=0.75, linewidth=3, linecolor=:black, marker=(:black, stroke(3)), legend=false, outliers=false)
+    @df df dotplot!(p, :Formatted_name, :nleaves, marker=(:black, stroke(0)), legend=false, markersize=2, xrotation=xrotation)
+    @df df boxplot!(p, :Formatted_name, :nleaves, fillalpha=0.75, linewidth=3, linecolor=:black, marker=(:black, stroke(3)), legend=false, outliers=false, xrotation=xrotation)
     mkpath(folder_path)
     path = "$(folder_path)/$(filename)"
     path = replace(path, " " => "")
@@ -97,10 +97,11 @@ function plot_out(title, filename, df, category)
 
     folder_path = "plots/$(category)/time"
     p = get_plot()
+    title = replace(title, r"^"m => " "^20)
     title!(p, title)
     xticks_formatter(x) = @sprintf("%d min", x / 60)
     try
-        scatter!(p, df.time, df.nleaves, group=df.Formatted_name, legend=:outertopright, xlabel="Time to compute the explanation", m=(:auto), xticks=[0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600], xformatter=xticks_formatter)
+        scatter!(p, df.time, df.nleaves, group=df.Formatted_name, legend=:outertopright, xlabel="Time to compute the explanation", m=(:auto), xticks=[0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200], xformatter=xticks_formatter)
     catch
     end
     mkpath(folder_path)
@@ -164,7 +165,7 @@ end
 using Measures
 possible_methods = ["lime", "banz", "shap", "const", "stochastic"]
 possible_methods_with_perturbations = ["lime", "banz", "shap"]
-possible_perturbations = [200, 1000]
+possible_perturbations = [200, 400, 1000]
 possible_type = ["Flat", "layered"]
 possible_direction = ["UP", "DOWN"]
 possible_perturbation_chance = [0.0,
@@ -184,7 +185,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                 # for perturbation_chance in possible_perturbation_chance
                 for dist in ["CONST"]
                     for rel_tol in possible_rel_tols
-                        filename = "$(pertubation_count) perturbations, type=$(type), rel_tol $(rel_tol)%, dist = $(dist)"
+                        filename = "$(pertubation_count) perturbations, type=$(type), rel_tol $(rel_tol), dist = $(dist)"
                         title = "Comparison of methods in $(tr(type)) mode\n with $(pertubation_count) perturbations and relative tolerance $(rel_tol)%"
                         filtered_df1 = filter(row -> occursin(Regex("lime_$(pertubation_count)_$(rel_tol)_$(type)_UP_1.2_$(dist)"), row[:name]), new_df)
                         perturbation_chances = map(x -> x[5], name_to_props.(filtered_df1.name))
@@ -243,7 +244,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                 # for perturbation_chance in possible_perturbation_chance
                 for dist in possible_dist
                     for rel_tol in possible_rel_tols
-                        filename = "$(pertubation_count) perturbations, type=$(type), rel_tol $(rel_tol)%, dist = $(dist)"
+                        filename = "$(pertubation_count) perturbations, type=$(type), rel_tol $(rel_tol), dist = $(dist)"
                         title = "Comparison of methods in $(tr(type)) mode\n with $(pertubation_count) perturbations, relative tolerance $(rel_tol)% and  δ = $(tr(dist))"
                         filtered_df1 = filter(row -> occursin(Regex("lime_$(pertubation_count)_$(rel_tol)_$(type)_UP_([0-9]*\\.[0-9]+)_$(dist)"), row[:name]), new_df)
                         perturbation_chances = map(x -> x[5], name_to_props.(filtered_df1.name))
@@ -327,12 +328,12 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                                 if method == "lime"
                                     filtered_df = filter(row -> occursin(Regex("lime_\\d+_$(rel_tol)_$(type)_$(direction)_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
                                     transform!(filtered_df, :name => (
-                                        x -> "TreeLIME\nn=" .* string.(extract_value.(x))
+                                        x -> "TreeLIME\n" .* string.(extract_value.(x)) .* " perturbations"
                                         # .* "\nσ=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
                                     ) => :Formatted_name)
                                 else
                                     filtered_df = filter(row -> occursin(Regex("$(method)_\\d+"), row[:name]) && row[:pruning_method] == (type == "Flat" ? :Flat_HAdd : :LbyLo_HAdd) && row[:rel_tol] == rel_tol / 100, new_df)
-                                    transform!(filtered_df, :name => (x -> "$(tr(method*"\n"))\nn=" .* string.(extract_value.(x))) => :Formatted_name)
+                                    transform!(filtered_df, :name => (x -> "$(tr(method*"\n"))\n" .* string.(extract_value.(x)) .* " perturbations") => :Formatted_name)
                                 end
                                 filtered_df[!, :perturbations] = [parse(Int, m.match) for m in match.(r"\d+", filtered_df[!, :name])]
                                 sort!(filtered_df, :perturbations)
@@ -388,17 +389,17 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                             if method == "lime"
                                 filtered_df1 = filter(row -> occursin(Regex("lime_$(pertubation_count)_$(rel_tol)_Flat_UP_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
                                 transform!(filtered_df1, :name => (
-                                    x -> "TreeLIME in $(tr("Flat")) mode"
+                                    x -> "TreeLIME\n$(tr("Flat"))\nmode"
                                     # .* "\nσ=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
                                 ) => :Formatted_name)
                                 filtered_df2 = filter(row -> occursin(Regex("lime_$(pertubation_count)_$(rel_tol)_layered_UP_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
                                 transform!(filtered_df2, :name => (
-                                    x -> "TreeLIME in $(tr("layered"))-$(tr("UP")) mode"
+                                    x -> "TreeLIME\n$(tr("layered"))-$(tr("UP"))\nmode"
                                     # .* "\nσ=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
                                 ) => :Formatted_name)
                                 filtered_df3 = filter(row -> occursin(Regex("lime_$(pertubation_count)_$(rel_tol)_layered_DOWN_$(perturbation_chance)_$(dist)"), row[:name]), new_df)
                                 transform!(filtered_df3, :name => (
-                                    x -> "TreeLIME in $(tr("layered"))-$(tr("DOWN")) mode"
+                                    x -> "TreeLIME\n$(tr("layered"))-$(tr("DOWN"))\nmode"
                                     # .* "\nσ=" .* string(perturbation_chance) .* "\ndist = " .* string(dist)
                                 ) => :Formatted_name)
                             else
@@ -485,7 +486,6 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
 
 
     elseif variable == "perturbation_chance"
-        continue
         println("Action for perturbation_chance")
         for pertubation_count in possible_perturbations
             for type in possible_type
@@ -516,7 +516,7 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                             sort!(filtered_df, :perturbation_chance)
 
                             transform!(filtered_df, [:name, :perturbation_chance] =>
-                                ((name, perturbation_chance) -> "TreeLIME" .* "\nσ=" .* string.(tr.(perturbation_chance))) => :Formatted_name)
+                                ((name, perturbation_chance) -> "TreeLIME" .* "\n" .* string.(tr.(perturbation_chance))) => :Formatted_name)
 
                             xorder = unique(filtered_df.Formatted_name)
                             Nx = length(xorder)
@@ -525,12 +525,20 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                                 j = findall(x -> x == xi, filtered_df.Formatted_name)
                                 si = " "^(Nx - i)
                                 lines = split(string(unique(filtered_df.Formatted_name[j])[1]), '\n')
-                                modified_lines = (si .* line .* si for line in lines)
+                                modified_lines = [si .* line .* si for line in lines]
                                 new_string = join(modified_lines, '\n')
+                                if (i % 2 == 0)
+                                    # insert!(modified_lines, 2, "-")
+                                    # # insert!(modified_lines, 3, "-")
+                                    # new_string = join(modified_lines, '\n')
+                                    new_string = si * "​" * si * "\n\n" * new_string
+                                else
+                                    # new_string = join(modified_lines, '\n')
+                                end
                                 @. str[j] = new_string
                             end
                             filtered_df.Formatted_name = str
-                            plot_out(title, filename, filtered_df, "perturbation_chance")
+                            plot_out(title, filename, filtered_df, "perturbation_chance", xrotation=0)
                         end
                     end
                 end
@@ -549,7 +557,13 @@ for variable in ["best_treelime", "method", "perturbations", "flat_or_layered", 
                     for direction in possible_direction_local
                         for rel_tol in possible_rel_tols
                             filename = "$(pertubation_count) perturbations, perturbation_chance = $(perturbation_chance), type=$((type)), direction = $(direction), rel_tol = $(rel_tol)"
-                            title = "$(tr("lime")) in $(tr(type))-$(tr(direction)) mode with $(pertubation_count) perturbations,\nγ ~ $(tr(perturbation_chance)) and relative tolerance $(rel_tol)%"
+                            title = nothing
+                            if type == "Flat"
+                                title = "$(tr("lime")) in $(tr(type)) mode with $(pertubation_count) perturbations,\nγ ~ $(tr(perturbation_chance)) and relative tolerance $(rel_tol)%"
+                            else
+                                title = "$(tr("lime")) in $(tr(type))-$(tr(direction)) mode with $(pertubation_count) perturbations,\nγ ~ $(tr(perturbation_chance)) and relative tolerance $(rel_tol)%"
+                            end
+                            # title = "$(tr("lime")) in $(tr(type))-$(tr(direction)) mode with $(pertubation_count) perturbations,\nγ ~ $(tr(perturbation_chance)) and relative tolerance $(rel_tol)%"
                             println(title)
 
                             filtered_df1 = filter(row -> occursin(Regex("lime_$(pertubation_count)_$(rel_tol)_$(type)_$(direction)_$(perturbation_chance)_CONST"), row[:name]), new_df)
