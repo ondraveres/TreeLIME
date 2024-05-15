@@ -176,10 +176,12 @@ opt = ADAM()
 # data_loader = Flux.DataLoader((data[train_indexes], Flux.onehotbatch(df_labels.classification_family[train_indexes], labelnames)), batchsize=100, shuffle=true)
 
 
-Flux.Optimise.train!(loss, ps, repeatedly(minibatch, iterations), opt, cb=Flux.throttle(cb, 2))
-Flux.Optimise.train!(loss, ps, repeatedly(minibatch, iterations), opt, cb=Flux.throttle(cb, 2))
+# Flux.Optimise.train!(loss, ps, repeatedly(minibatch, iterations), opt, cb=Flux.throttle(cb, 2))
+# Flux.Optimise.train!(loss, ps, repeatedly(minibatch, iterations), opt, cb=Flux.throttle(cb, 2))
 
 # Flux.Optimise.train!(loss, ps, data_loader, opt, cb=Flux.throttle(cb, 2))
+
+@time @load "cape_equal_dropout_extractor2.jld2" extractor sch model data #takes 11 minutes
 
 full_test_accuracy = accuracy(data[test_indexes], df_labels.classification_family[test_indexes])
 println("Final evaluation:")
