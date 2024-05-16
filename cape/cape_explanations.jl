@@ -43,15 +43,14 @@ predictions = Flux.onecold((model(ds)))
 variants = []
 
 # push!(variants, ("lime_50_10_layered_UP_0.01_JSONDIFF", :Flat_HAdd))
-possible_rel_tols = [50]#, 99]
+possible_rel_tols = [50, 99]
 perturbations_chances = [0.0,
     0.01, 0.1, 0.2,
     1.01, 1.1, 1.2,
     2.1, 2.5, 2.9]
 
 for n in [200]
-    for c in [0.2,
-        1.2]
+    for c in perturbations_chances
         for rel_tol in possible_rel_tols
             # push!(variants, ("lime_$(n)_$(rel_tol)_Flat_UP_$(c)_JSONDIFF", :Flat_HAdd))
             push!(variants, ("lime_$(n)_$(rel_tol)_Flat_UP_$(c)_CONST", :Flat_HAdd))
@@ -61,18 +60,18 @@ for n in [200]
             push!(variants, ("lime_$(n)_$(rel_tol)_layered_UP_$(c)_CONST", :Flat_HAdd))
         end
     end
-    # push!(variants, ("banz_$(n)", :Flat_HAdd))
-    # push!(variants, ("banz_$(n)", :LbyLo_HAdd))
-    # push!(variants, ("shap_$(n)", :Flat_HAdd))
-    # push!(variants, ("shap_$(n)", :LbyLo_HAdd))
+    push!(variants, ("banz_$(n)", :Flat_HAdd))
+    push!(variants, ("banz_$(n)", :LbyLo_HAdd))
+    push!(variants, ("shap_$(n)", :Flat_HAdd))
+    push!(variants, ("shap_$(n)", :LbyLo_HAdd))
 end
 
-# push!(variants, ("stochastic", :Flat_HAdd))
-# push!(variants, ("stochastic", :LbyLo_HAdd))
-# # # push!(variants, ("grad", :Flat_HAdd))
-# push!(variants, ("const", :Flat_HAdd))
-# push!(variants, ("const", :LbyLo_HAdd))
-# push!(variants, ("const", :Flat_Gadd))
+push!(variants, ("stochastic", :Flat_HAdd))
+push!(variants, ("stochastic", :LbyLo_HAdd))
+# # push!(variants, ("grad", :Flat_HAdd))
+push!(variants, ("const", :Flat_HAdd))
+push!(variants, ("const", :LbyLo_HAdd))
+push!(variants, ("const", :Flat_Gadd))
 
 function getexplainer(name; sch=nothing, extractor=nothing)
     if name == "stochastic"
@@ -156,9 +155,9 @@ for (name, pruning_method) in variants # vcat(variants, ("nothing", "nothing"))
 end
 
 try
-    @save "./results/data/layered_and_flat_exdf_$(task+7000).bson" exdf
+    @save "./results/data/layered_and_flat_exdf_$(task+10000).bson" exdf
 catch
-    @save "./results/data/layered_and_flat_exdf_$(task+7000).bson" exdf
+    @save "./results/data/layered_and_flat_exdf_$(task+10000).bson" exdf
 end
 
 # predictions

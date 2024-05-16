@@ -1,6 +1,6 @@
 #!/bin/bash
 #hepatitis deviceid mutagenesis
-for counter in {101..200}; do
+for counter in {201..300}; do
     if [ $counter -le 100 ]; then
         echo "test"
     fi
