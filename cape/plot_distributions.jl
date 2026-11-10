@@ -13,7 +13,7 @@ function get_plot(d, t)
     x = range(0, stop=1, length=1000)
     y = pdf.(d, x)
 
-    return plot(x, y, size=(width_px, height_px), xlabel="γ value", ylabel="Probability Density", margin=5mm, title=t, legend=false, xticks=[0, 0.5, 1],
+    return plot(x, y, size=(width_px, height_px), xlabel="γ value", ylabel="Probability Density", margin=3mm, title=t, legend=false, xticks=[0, 0.5, 1],
         titlefontsize=12,
         guidefontsize=10,
         tickfontsize=8,
@@ -64,7 +64,7 @@ possible_d = [
 
 
 
-width_cm = 15
+width_cm = 16
 height_cm = 15
 dpi = 150
 width_px = round(Int, width_cm * dpi / 2.54)
@@ -79,7 +79,7 @@ push!(plots, plot(get_plot_c(0.9, "Const(0.9)\ndistribution")))
 pb2 = plot(legend=false, grid=false, foreground_color_subplot=:white);
 
 
-ylims!(plots[7], 0, 1.2)
+ylims!(plots[7], 0, 1.2);
 l = @layout [grid(2, 4); grid(1, 4, widths=[1 / 6, 1 / 3, 1 / 3, 1 / 6])]
 m = plot(plots..., layout=(3, 4), size=(width_px, height_px))
 
